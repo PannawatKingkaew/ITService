@@ -22,11 +22,11 @@ import 'user_problem_list.dart';
 import 'utils/session_manager.dart';
 import 'utils/protected_page.dart';
 
-
 class ProblemItem {
   final String id;
   final String name;
-  ProblemItem({required this.id, required this.name});
+
+  const ProblemItem({required this.id, required this.name});
 }
 
 class UserProblemForm extends ProtectedPage {
@@ -40,6 +40,7 @@ class UserProblemForm extends ProtectedPage {
 class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   ProblemItem? selectedProblemItem;
   String? selectedPriority;
+
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
@@ -67,26 +68,40 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     vertical: 0,
   );
 
-  // ----------------- สำหรับปัญหาจาก API -----------------
   List<ProblemItem> problemsFromApi = [];
   bool isLoadingProblems = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserSession();
-    adController = TextEditingController(text: ad);
-    nameController = TextEditingController(text: username);
-    companyController = TextEditingController(text: company);
-    locationController = TextEditingController();
+
+    adController = TextEditingController();
+    nameController = TextEditingController();
+    companyController = TextEditingController();
     phoneController = TextEditingController();
     descriptionController = TextEditingController();
+    locationController = TextEditingController();
     categoryController = TextEditingController(text: widget.category);
+
+    _loadUserSession();
+  }
+
+  @override
+  void dispose() {
+    adController.dispose();
+    nameController.dispose();
+    companyController.dispose();
+    phoneController.dispose();
+    descriptionController.dispose();
+    categoryController.dispose();
+    locationController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: Column(
@@ -178,28 +193,28 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
               const SizedBox(height: 16),
               _buildTextField("หมวดหมู่", categoryController, readOnly: true),
               const SizedBox(height: 16),
-              // ----------------- Dropdown ปัญหา -----------------
               isLoadingProblems
                   ? const Center(child: CircularProgressIndicator())
                   : _buildDropdownField(
                       "เลือกปัญหา",
                       selectedProblemItem?.name,
                       items: problemsFromApi.map((e) => e.name).toList(),
-                      onChanged: (val) async {
+                      onChanged: (val) {
                         if (val == null) return;
-                        ProblemItem item;
                         final exist = problemsFromApi
                             .where((p) => p.name == val)
                             .isNotEmpty;
+
+                        ProblemItem item;
                         if (!exist) {
-                          final newId = 'new:$val';
-                          item = ProblemItem(id: newId, name: val);
-                          setState(() => problemsFromApi.add(item));
+                          item = ProblemItem(id: 'new:$val', name: val);
+                          problemsFromApi.add(item);
                         } else {
                           item = problemsFromApi.firstWhere(
                             (p) => p.name == val,
                           );
                         }
+
                         setState(() => selectedProblemItem = item);
                       },
                     ),
@@ -217,7 +232,6 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
                 controller: descriptionController,
               ),
               Divider(color: Colors.grey[300], height: 30),
-              const SizedBox(height: 16),
               _buildImagePicker(size),
               const SizedBox(height: 48),
               Align(
@@ -232,54 +246,6 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _onNextTap() {
-    final phone = phoneController.text.trim();
-
-    if (selectedProblemItem == null || selectedPriority == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red.shade400,
-          content: const Text(
-            "กรุณากรอกข้อมูลให้ครบถ้วน",
-            style: TextStyle(fontFamily: "Kanit"),
-          ),
-        ),
-      );
-      return;
-    }
-
-    if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red.shade400,
-          content: const Text(
-            "กรุณากรอกเบอร์โทร 5 หลัก",
-            style: TextStyle(fontFamily: "Kanit"),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UserProblemConfirm(
-          name: nameController.text,
-          company: companyController.text,
-          phone: phone,
-          category: categoryController.text,
-          problemName: selectedProblemItem!.name,
-          problemID: selectedProblemItem!.id,
-          priority: selectedPriority!,
-          description: descriptionController.text,
-          location: locationController.text,
-          image: _image,
         ),
       ),
     );
@@ -360,6 +326,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     );
   }
 
+  // ---------------- DROPDOWN ----------------
   Widget _buildDropdownField(
     String label,
     String? value, {
@@ -484,6 +451,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     );
   }
 
+  // ---------------- IMAGE ----------------
   Widget _buildImagePicker(Size size) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,13 +459,6 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
         const Text("รูปภาพ :", style: TextStyle(fontFamily: "Kanit")),
         const SizedBox(height: 6),
         ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF8BBD0),
-            foregroundColor: Colors.black87,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
           icon: const Icon(Icons.photo_camera),
           label: const Text("เลือกรูป", style: TextStyle(fontFamily: "Kanit")),
           onPressed: () {
@@ -531,15 +492,13 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
         if (_image != null)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(_image!, width: size.width * 0.6),
-            ),
+            child: Image.file(_image!, width: size.width * 0.6),
           ),
       ],
     );
   }
 
+  // ---------------- BUTTON ----------------
   Widget _buildButton({
     required String text,
     required Color color,
@@ -687,8 +646,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     );
   }
 
-  // ============================== Logic ============================== //
-  
+  // ---------------- LOGIC ----------------
   Future<void> _loadUserSession() async {
     final userData = await SessionManager.getUserData();
     if (!mounted) return;
@@ -698,28 +656,30 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
         context,
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
-    } else {
-      setState(() {
-        username = userData['username'];
-        company = userData['company'];
-        ad = userData['userid'];
-
-        nameController.text = username;
-        companyController.text = company;
-        adController.text = ad;
-      });
-
-      fetchProblems();
+      return;
     }
+
+    setState(() {
+      username = userData['username'];
+      company = userData['company'];
+      ad = userData['userid'];
+
+      nameController.text = username;
+      companyController.text = company;
+      adController.text = ad;
+    });
+
+    fetchProblems();
   }
 
   Future<void> fetchProblems() async {
     setState(() => isLoadingProblems = true);
-    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemsubtypelist');
 
     try {
       final response = await http.post(
-        url,
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemsubtypelist',
+        ),
         body: {'category': categoryController.text},
       );
 
@@ -735,8 +695,6 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
             ),
           );
         });
-      } else {
-        debugPrint('Failed to load problems: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint("Error fetching problems: $e");
@@ -746,9 +704,50 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null && mounted) {
       setState(() => _image = File(pickedFile.path));
     }
+  }
+
+  void _onNextTap() {
+    final phone = phoneController.text.trim();
+
+    if (selectedProblemItem == null || selectedPriority == null) {
+      _showError("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    if (phone.isEmpty) {
+      _showError("กรุณากรอกเบอร์โทร 5 หลัก");
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserProblemConfirm(
+          name: nameController.text,
+          company: companyController.text,
+          phone: phone,
+          category: categoryController.text,
+          problemName: selectedProblemItem!.name,
+          problemID: selectedProblemItem!.id,
+          priority: selectedPriority!,
+          description: descriptionController.text,
+          location: locationController.text,
+          image: _image,
+        ),
+      ),
+    );
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red.shade400,
+        content: Text(msg, style: const TextStyle(fontFamily: "Kanit")),
+      ),
+    );
   }
 }

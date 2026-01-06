@@ -45,7 +45,9 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
         children: [
           _buildHeader(context, size),
           isLoading
-              ? Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
               : _buildBody(context, size, problemRows),
           _buildFooter(context, size),
         ],
@@ -131,33 +133,26 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
 
   Widget _buildSummaryCards(BuildContext context) {
     final waiting = problemRows.where((r) => r['status'] == 'รอตรวจสอบ').length;
-
     final cards = [_summaryCard("รอตรวจสอบ", waiting, Colors.blue)];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        children: [
-          Row(
-            children: cards.map((card) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: card,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-        ],
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: cards.map((card) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: card,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _summaryCard(String title, int count, Color color) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -165,33 +160,24 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
           BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 2)),
         ],
       ),
-      child: SizedBox(
-        height: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              count.toString(),
-              style: TextStyle(
-                fontFamily: "Kanit",
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontFamily: "Kanit",
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontFamily: "Kanit",
-                fontSize: 13,
-                color: Colors.black87,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(fontFamily: "Kanit", fontSize: 13),
+          ),
+        ],
       ),
     );
   }
@@ -201,36 +187,26 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
     List<Map<String, dynamic>> rows,
   ) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 4)],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTableHeader(),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
               itemCount: rows.length,
               itemBuilder: (context, index) {
                 final row = rows[index];
-                final bgColor = index.isEven
-                    ? const Color(0xFFFDE6F2)
-                    : const Color(0xFFFFF0F8);
-
                 return Container(
-                  color: bgColor,
+                  color: index.isEven
+                      ? const Color(0xFFFDE6F2)
+                      : const Color(0xFFFFF0F8),
                   child: _buildTableRow(
                     context: context,
                     id: row['id'],
@@ -251,23 +227,22 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
 
   Widget _buildTableHeader() {
     const headers = ["หมายเลขปัญหา", "ปัญหา", "สถานะ"];
-    const flexValues = [3, 2, 2, 1];
+    const flex = [3, 2, 2, 1];
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       color: const Color(0xFFE9DFF5),
       child: Row(
         children: List.generate(headers.length, (i) {
           return Expanded(
-            flex: flexValues[i],
+            flex: flex[i],
             child: Center(
               child: Text(
                 headers[i],
                 style: const TextStyle(
-                  fontWeight: FontWeight.w600,
                   fontFamily: "Kanit",
                   fontSize: 13,
-                  color: Color(0xFF333333),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -286,32 +261,26 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
     required Color statusColor,
     required Color priorityColor,
   }) {
-    const textColor = Color(0xFF333333);
-
-    return Padding(
+    return Container(
+      // ✅ FIXED: no top gap
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildCell(id, flex: 3, color: priorityColor),
-          _buildCell(issue, flex: 2, color: textColor),
+          _buildCell(issue, flex: 2, color: Colors.black87),
           _buildCell(status, flex: 2, color: statusColor),
           Expanded(
             flex: 1,
-            child: Center(
-              child: GestureDetector(
-                onTap: () async {
-   
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AdminProblemDetailSelect(id: id),
-                    ),
-                  );
-                },
-                child: Image.asset(imagePath, width: 18, height: 18),
-              ),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminProblemDetailSelect(id: id),
+                  ),
+                );
+              },
+              child: Image.asset(imagePath, width: 18, height: 18),
             ),
           ),
         ],
@@ -325,27 +294,21 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
       child: Center(
         child: Text(
           text,
-          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
         ),
       ),
     );
   }
 
-  // ==============================  Footer ============================== //
+  // ============================== Footer ============================== //
   Widget _buildFooter(BuildContext context, Size size) {
     return Container(
       height: size.height * 0.07,
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -385,14 +348,12 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
     String label,
     VoidCallback onTap,
   ) {
-    final size = MediaQuery.of(context).size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: size, color: Colors.black87),
+          Icon(icon, size: 22),
           const SizedBox(height: 2),
           Text(
             label,
@@ -409,14 +370,12 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
     String label,
     VoidCallback onTap,
   ) {
-    final size = MediaQuery.of(context).size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(path, width: size, height: size),
+          Image.asset(path, width: 22, height: 22),
           const SizedBox(height: 2),
           Text(
             label,
@@ -428,55 +387,46 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
   }
 
   // ============================== Logic ============================== //
-
   Future<void> fetchDashboardData() async {
-    try {
-      final userData = await SessionManager.getUserData();
-      final category = userData['team'];
+    final userData = await SessionManager.getUserData();
+    final category = userData['team'];
 
-      final url = Uri.parse(
+    final response = await http.post(
+      Uri.parse(
         'https://digitapp.rajavithi.go.th/ITService_API/api/get-adminproblemdashboard',
-      );
+      ),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"category": category}),
+    );
 
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"category": category}),
-      );
+    final List<Map<String, dynamic>> data = (json.decode(response.body) as List)
+        .cast<Map<String, dynamic>>();
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load dashboard data');
-      }
+    setState(() {
+      problemRows =
+          data.map((item) {
+            return {
+              'id': item['problem_id'],
+              'issue': item['problem_subtypename'],
+              'status': item['problem_status'],
+              'priority': item['problem_speed'],
+              'image': 'assets/img/inspect.png',
+              'statusColor': _getStatusColor(item['problem_status']),
+              'priorityColor': _getPriorityColor(item['problem_speed']),
+              'createdAt': item['problem_createdat'],
+            };
+          }).toList()..sort((a, b) {
+            final aTime =
+                DateTime.tryParse(a['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bTime =
+                DateTime.tryParse(b['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return bTime.compareTo(aTime); // latest first
+          });
 
-      final List<Map<String, dynamic>> data =
-          (json.decode(response.body) as List)
-              .map((item) => item as Map<String, dynamic>)
-              .toList();
-
-      setState(() {
-        problemRows = data.map((item) {
-          final statusColor = _getStatusColor(item['problem_status'] as String);
-          final priorityColor = _getPriorityColor(
-            item['problem_speed'] as String,
-          );
-          return {
-            'id': item['problem_id'],
-            'issue': item['problem_subtypename'],
-            'status': item['problem_status'],
-            'priority': item['problem_speed'],
-            'image': 'assets/img/inspect.png',
-            'statusColor': statusColor,
-            'priorityColor': priorityColor,
-            'createdBy': item['problem_createdby'],
-            'createdAt': item['problem_createdat'],
-          };
-        }).toList();
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Error fetching dashboard: $e');
-    }
+      isLoading = false;
+    });
   }
 
   Color _getStatusColor(String status) {
@@ -491,10 +441,8 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
         return Colors.orange;
       case 'รอประเมิน':
         return Colors.indigo;
-      case 'ยกเลิก':
-        return const Color.fromARGB(255, 105, 106, 117);
       default:
-        return Colors.blue;
+        return Colors.grey;
     }
   }
 

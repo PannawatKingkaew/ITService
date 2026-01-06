@@ -14,7 +14,6 @@ import 'chat_message.dart';
 import 'utils/session_manager.dart';
 import 'utils/protected_page.dart';
 
-
 class ChatListPage extends ProtectedPage {
   const ChatListPage({super.key});
 
@@ -33,7 +32,6 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
   @override
   void initState() {
     super.initState();
-
     fetchChatList();
   }
 
@@ -56,7 +54,6 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
   // ---------------------- Header ---------------------- //
   Widget _buildHeader(Size size) {
     return SafeArea(
-      top: true,
       bottom: false,
       child: Stack(
         children: [
@@ -66,7 +63,7 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFAD3A77), Color(0xFFC23B85)],
+                colors: [secondaryColor, primaryColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -89,8 +86,9 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
             ),
           ),
           Positioned(
-            top: size.height * 0.005,
-            left: size.width * 0.01,
+            left: 0,
+            top: 0,
+            bottom: 0,
             child: IconButton(
               icon: Image.asset(
                 'assets/img/left_arrow.png',
@@ -135,9 +133,9 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
 
           return _buildChatTile(
             size,
-            item["problem_id"],
-            item["message_text"] ?? "",
-            item["unread"],
+            item["problem_id"] as String,
+            item["message_text"] as String,
+            item["unread"] as int,
           );
         },
       ),
@@ -153,24 +151,22 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
   ) {
     return GestureDetector(
       onTap: () async {
-        if (!context.mounted) return;
-
         final shouldReload = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatMessagePage(problemId: problemId),
+            builder: (_) => ChatMessagePage(problemId: problemId),
           ),
         );
 
-        if (shouldReload == true) {
-          setState(() {
-            isLoading = true;
-            chatList.clear();
-          });
-          fetchChatList(); 
-        }
-      },
+        if (!mounted || shouldReload != true) return;
 
+        setState(() {
+          isLoading = true;
+          chatList.clear();
+        });
+
+        fetchChatList();
+      },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(vertical: 6),
@@ -287,13 +283,11 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/get-ChatList',
-      );
-
       final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-ChatList',
+        ),
+        headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"ad_user": adUser}),
       );
 
@@ -303,23 +297,27 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
 
       final List<dynamic> data = json.decode(response.body);
 
+      final List<Map<String, dynamic>> baseList = data
+          .map(
+            (e) => {
+              "problem_id": e["problem_id"],
+              "message_text": e["message_text"] ?? "",
+              "unread": 0,
+            },
+          )
+          .toList();
+
+      if (!mounted) return;
+
       setState(() {
-        chatList = data
-            .map(
-              (e) => {
-                "problem_id": e["problem_id"],
-                "message_text": e["message_text"],
-                "unread": 0,
-              },
-            )
-            .toList();
+        chatList = baseList;
         isLoading = false;
       });
 
       fetchNotification();
     } catch (e) {
       debugPrint("Error fetchChatList: $e");
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -328,13 +326,11 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/get-checknotification',
-      );
-
       final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-checknotification',
+        ),
+        headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"ad_user": adUser}),
       );
 
@@ -348,16 +344,17 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
         for (var item in data)
           item["problem_id"]:
               int.tryParse(
-                (item["total_unread_notifications"] ?? "0").toString(),
-              ) ??
-              0,
+                    (item["total_unread_notifications"] ?? "0").toString(),
+                  ) ??
+                  0,
       };
+
+      if (!mounted) return;
 
       setState(() {
         chatList = chatList.map((chat) {
           return {
-            "problem_id": chat["problem_id"],
-            "message_text": chat["message_text"],
+            ...chat,
             "unread": notificationMap[chat["problem_id"]] ?? 0,
           };
         }).toList();

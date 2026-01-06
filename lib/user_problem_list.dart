@@ -32,10 +32,12 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
 
   String? adUser;
 
+  late Future<List<Map<String, dynamic>>> _problemFuture;
+
   @override
   void initState() {
     super.initState();
-    fetchProblems();
+    _problemFuture = fetchProblems();
   }
 
   @override
@@ -43,12 +45,12 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Color(0xFFFDE6EF),
+      backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
           _buildHeader(size),
           FutureBuilder<List<Map<String, dynamic>>>(
-            future: fetchProblems(),
+            future: _problemFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Expanded(
@@ -64,17 +66,12 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
                 );
               }
 
-              final rows = snapshot.data?.isNotEmpty == true
-                  ? _applyFiltersAndSort(snapshot.data!)
-                  : [];
+              final rows = snapshot.data ?? [];
+              final filtered = _applyFiltersAndSort(List.of(rows));
 
-              return rows.isEmpty
+              return filtered.isEmpty
                   ? const Expanded(child: Center(child: Text('ไม่มีข้อมูล')))
-                  : _buildBody(
-                      context,
-                      size,
-                      rows.cast<Map<String, dynamic>>(),
-                    );
+                  : _buildBody(context, size, filtered);
             },
           ),
           _buildFooter(context, size),
@@ -130,7 +127,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (_) => const HomePage()),
                 );
               },
             ),
@@ -141,6 +138,27 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
   }
 
   // ---------------------- Body ---------------------- //
+  Widget _buildBody(
+    BuildContext context,
+    Size size,
+    List<Map<String, dynamic>> rows,
+  ) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            _buildFilterBar(size, rows),
+            const SizedBox(height: 10),
+            Expanded(child: _buildProblemTable(context, rows)),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterBar(Size size, List<Map<String, dynamic>> rows) {
     final uniqueStatuses = rows
         .map((e) => e['status'] as String)
@@ -179,14 +197,9 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
           ),
           const SizedBox(width: 6),
           TextButton.icon(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
             icon: Icon(
               showAllUsers ? Icons.person : Icons.people,
-              color: Color(0xFFC23B85),
+              color: const Color(0xFFC23B85),
               size: 18,
             ),
             label: Text(
@@ -214,7 +227,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
       height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Color(0xFFC23B85), width: 1),
+        border: Border.all(color: const Color(0xFFC23B85)),
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
       ),
@@ -225,14 +238,9 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
             label,
             style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
           ),
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            color: Color(0xFFC23B85),
-            size: 18,
-          ),
           items: items
               .map(
-                (val) => DropdownMenuItem<String>(
+                (val) => DropdownMenuItem(
                   value: val,
                   child: Text(
                     val,
@@ -247,38 +255,11 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    Size size,
-    List<Map<String, dynamic>> rows,
-  ) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            _buildFilterBar(size, rows),
-            const SizedBox(height: 10),
-            Expanded(
-              child: _buildProblemTable(
-                context,
-                rows.cast<Map<String, dynamic>>(),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProblemTable(
     BuildContext context,
     List<Map<String, dynamic>> rows,
   ) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -292,22 +273,21 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTableHeader(),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
               itemCount: rows.length,
               itemBuilder: (context, index) {
                 final row = rows[index];
-                final bgColor = index.isEven
+                final bg = index.isEven
                     ? const Color(0xFFFDE6F2)
                     : const Color(0xFFFFF0F8);
 
                 return Container(
-                  color: bgColor,
+                  color: bg,
                   child: _buildTableRow(
                     context: context,
                     id: row['id'],
@@ -331,7 +311,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     const flexValues = [3, 2, 2, 1];
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       color: const Color(0xFFE9DFF5),
       child: Row(
         children: List.generate(headers.length, (i) {
@@ -341,10 +321,9 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
               child: Text(
                 headers[i],
                 style: const TextStyle(
-                  fontWeight: FontWeight.w600,
                   fontFamily: "Kanit",
                   fontSize: 13,
-                  color: Color(0xFF333333),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -363,31 +342,23 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     required Color statusColor,
     required Color priorityColor,
   }) {
-    const textColor = Colors.black87;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildCell(id, flex: 3, color: priorityColor),
-          _buildCell(issue, flex: 2, color: textColor),
+          _buildCell(issue, flex: 2, color: Colors.black87),
           _buildCell(status, flex: 2, color: statusColor),
           Expanded(
             flex: 1,
-            child: Center(
-              child: GestureDetector(
-                onTap: () async {
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => UserProblemDetail(id: id),
-                    ),
-                  );
-                },
-                child: Image.asset(imagePath, width: 18, height: 18),
-              ),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UserProblemDetail(id: id)),
+                );
+              },
+              child: Image.asset(imagePath, width: 18, height: 18),
             ),
           ),
         ],
@@ -401,9 +372,9 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
       child: Center(
         child: Text(
           text,
-          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
         ),
       ),
     );
@@ -463,13 +434,12 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     VoidCallback onTap,
   ) {
     final iconSize = size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: iconSize, color: Colors.black87),
+          Icon(icon, size: iconSize),
           const SizedBox(height: 2),
           Text(
             label,
@@ -488,7 +458,6 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
     VoidCallback onTap,
   ) {
     final imageSize = size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -509,7 +478,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
 
   Future<List<Map<String, dynamic>>> fetchProblems() async {
     final userData = await SessionManager.getUserData();
-    final adUser = userData['userid'];
+    adUser = userData['userid'];
 
     final url = Uri.parse(
       showAllUsers
@@ -523,29 +492,19 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
       body: jsonEncode(showAllUsers ? {} : {"ad_user": adUser}),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load problems. Status code: ${response.statusCode}',
-      );
-    }
+    final List data = json.decode(response.body);
 
-    final List<Map<String, dynamic>> data = (json.decode(response.body) as List)
-        .map((item) => item as Map<String, dynamic>)
-        .toList();
-
-    return data.map((item) {
-      final statusColor = _getStatusColor(item['problem_status'] as String);
-      final priorityColor = _getPriorityColor(item['problem_speed'] as String);
+    return data.map<Map<String, dynamic>>((item) {
       return {
-        'id': item['problem_id'] as String,
-        'issue': item['problem_subtypename'] as String,
-        'status': item['problem_status'] as String,
-        'priority': item['problem_speed'] as String,
+        'id': item['problem_id'],
+        'issue': item['problem_subtypename'],
+        'status': item['problem_status'],
+        'priority': item['problem_speed'],
         'image': 'assets/img/inspect.png',
-        'statusColor': statusColor,
-        'priorityColor': priorityColor,
-        'createdBy': item['problem_createdby'] as String,
-        'createdAt': item['problem_createdat'] as String,
+        'statusColor': _getStatusColor(item['problem_status']),
+        'priorityColor': _getPriorityColor(item['problem_speed']),
+        'createdBy': item['problem_createdby'],
+        'createdAt': item['problem_createdat'],
       };
     }).toList();
   }
@@ -563,7 +522,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
       case 'รอประเมิน':
         return Colors.indigo;
       case 'ยกเลิก':
-        return const Color.fromARGB(255, 105, 106, 117);
+        return const Color(0xFF696A75);
       default:
         return Colors.blue;
     }
@@ -583,61 +542,61 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
   }
 
   void _toggleShowAllUsers() {
-    setState(() => showAllUsers = !showAllUsers);
+    setState(() {
+      showAllUsers = !showAllUsers;
+      _problemFuture = fetchProblems();
+    });
   }
 
-  void _updateFilter(String? status) => setState(() => selectedStatus = status);
-  void _updateSort(String? sort) => setState(() => sortOption = sort);
+  void _updateFilter(String? value) => setState(() => selectedStatus = value);
+  void _updateSort(String? value) => setState(() => sortOption = value);
 
   List<Map<String, dynamic>> _applyFiltersAndSort(
     List<Map<String, dynamic>> rows,
   ) {
-
-    if (!showAllUsers && adUser != null) {
-      rows = rows.where((row) => row['createdBy'] == adUser).toList();
-    }
-
+    // -------- Filter --------
     if (selectedStatus != null && selectedStatus != "ทั้งหมด") {
-      rows = rows.where((row) => row['status'] == selectedStatus).toList();
+      rows = rows.where((r) => r['status'] == selectedStatus).toList();
     }
 
+    // -------- Sort --------
     final priorityOrder = {'ด่วนมาก': 0, 'ด่วน': 1, 'ปกติ': 2};
 
-    rows.sort((a, b) {
-      final aPriority = priorityOrder[a['priority']] ?? 3;
-      final bPriority = priorityOrder[b['priority']] ?? 3;
-      return aPriority.compareTo(bPriority);
-    });
+    if (sortOption != null) {
+      rows.sort((a, b) {
+        switch (sortOption) {
+          case "ด่วนที่สุด":
+            return (priorityOrder[a['priority']] ?? 99).compareTo(
+              priorityOrder[b['priority']] ?? 99,
+            );
 
-    switch (sortOption) {
-      case "ด่วนที่สุด":
-        rows.sort((a, b) {
-          final aPriority = priorityOrder[a['priority']] ?? 3;
-          final bPriority = priorityOrder[b['priority']] ?? 3;
-          return aPriority.compareTo(bPriority);
-        });
-        break;
-      case "ด่วนน้อยที่สุด":
-        rows.sort((a, b) {
-          final aPriority = priorityOrder[a['priority']] ?? 3;
-          final bPriority = priorityOrder[b['priority']] ?? 3;
-          return bPriority.compareTo(aPriority);
-        });
-        break;
-      case "รายการล่าสุด":
-        rows.sort(
-          (a, b) => DateTime.parse(
-            b['createdAt'],
-          ).compareTo(DateTime.parse(a['createdAt'])),
-        );
-        break;
-      case "รายการเก่าสุด":
-        rows.sort(
-          (a, b) => DateTime.parse(
-            a['createdAt'],
-          ).compareTo(DateTime.parse(b['createdAt'])),
-        );
-        break;
+          case "ด่วนน้อยที่สุด":
+            return (priorityOrder[b['priority']] ?? 99).compareTo(
+              priorityOrder[a['priority']] ?? 99,
+            );
+
+          case "รายการล่าสุด":
+            final aTime =
+                DateTime.tryParse(a['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bTime =
+                DateTime.tryParse(b['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return bTime.compareTo(aTime); // newest first
+
+          case "รายการเก่าสุด":
+            final aTime =
+                DateTime.tryParse(a['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bTime =
+                DateTime.tryParse(b['createdAt'] ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return aTime.compareTo(bTime); // oldest first
+
+          default:
+            return 0;
+        }
+      });
     }
 
     return rows;

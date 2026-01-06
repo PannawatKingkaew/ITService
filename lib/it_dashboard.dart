@@ -28,23 +28,24 @@ class ITDashboard extends ProtectedPage {
 
 class _ITDashboardState extends ProtectedState<ITDashboard> {
   List<Map<String, dynamic>> problemRows = [];
+  List<Map<String, dynamic>> activeRows = [];
+
   bool isLoading = true;
   bool isAdmin = false;
+
   @override
   void initState() {
     super.initState();
-    _loadUserType();
-    fetchDashboardData();
+    _bootstrap();
   }
 
-  Future<void> _loadUserType() async {
+  Future<void> _bootstrap() async {
     final userData = await SessionManager.getUserData();
     if (!mounted) return;
 
-    setState(() {
-      isAdmin =
-          userData['usertype']?.toString().toLowerCase().trim() == 'admin';
-    });
+    isAdmin = userData['usertype']?.toString().toLowerCase().trim() == 'admin';
+
+    await fetchDashboardData(userData['userid']);
   }
 
   @override
@@ -56,9 +57,11 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
       body: Column(
         children: [
           _buildHeader(context, size),
-          isLoading
-              ? Expanded(child: Center(child: CircularProgressIndicator()))
-              : _buildBody(context, size, problemRows),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildBody(context, size),
+          ),
           _buildFooter(context, size),
         ],
       ),
@@ -68,27 +71,15 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
   // ============================== Header ============================== //
   Widget _buildHeader(BuildContext context, Size size) {
     return SafeArea(
-      top: true,
-      bottom: false,
       child: Stack(
         children: [
           Container(
-            width: double.infinity,
             height: size.height * 0.06,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFAD3A77), Color(0xFFC23B85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
-                ),
-              ],
             ),
             child: const Text(
               "รายการปัญหา",
@@ -101,13 +92,12 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
             ),
           ),
           Positioned(
-            top: size.height * 0.005,
-            left: size.width * 0.005,
+            left: 6,
+            top: 4,
             child: IconButton(
               icon: Image.asset(
                 'assets/img/left_arrow.png',
                 width: size.height * 0.025,
-                height: size.height * 0.025,
               ),
               onPressed: () => Navigator.push(
                 context,
@@ -115,25 +105,22 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
               ),
             ),
           ),
-
           if (isAdmin)
             Positioned(
+              right: 12,
               top: size.height * 0.012,
-              right: size.width * 0.02,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminDashboard()),
-                  );
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 221, 134, 181),
+                    color: const Color.fromARGB(255, 221, 134, 181),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -154,41 +141,34 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
   }
 
   // ============================== Body ============================== //
-  Widget _buildBody(
-    BuildContext context,
-    Size size,
-    List<Map<String, dynamic>> rows,
-  ) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          children: [
-            SizedBox(height: size.height * 0.02),
-            _buildSummaryCards(context),
-            Expanded(child: _buildProblemTable(context)),
-            SizedBox(height: size.height * 0.025),
-          ],
-        ),
+  Widget _buildBody(BuildContext context, Size size) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: Column(
+        children: [
+          _buildSummaryCards(),
+          Expanded(child: _buildProblemTable(context)),
+          SizedBox(height: size.height * 0.025),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryCards(BuildContext context) {
-    final filteredRows = problemRows.toList();
+  Widget _buildSummaryCards() {
+    final total = problemRows.where((r) => r['status'] != 'ยกเลิก').length;
 
-    final total = filteredRows.where((r) => r['status'] != 'ยกเลิก').length;
+    final done = problemRows.where((r) => r['status'] == 'เสร็จสิ้น').length;
 
-    final inProgress = filteredRows
+    final inProgress = problemRows
         .where(
           (r) =>
               r['status'] == 'รอดำเนินการ' || r['status'] == 'กำลังดำเนินการ',
         )
         .length;
-    final evaluating = filteredRows
+
+    final evaluating = problemRows
         .where((r) => r['status'] == 'รอประเมิน')
         .length;
-    final done = filteredRows.where((r) => r['status'] == 'เสร็จสิ้น').length;
 
     final cards = [
       _summaryCard("ทั้งหมด", total, Colors.purple),
@@ -202,15 +182,11 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: cards.sublist(0, 4).map((card) {
-              return SizedBox(width: cardWidth, child: card);
-            }).toList(),
-          ),
-        ],
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: cards
+            .map((c) => SizedBox(width: cardWidth, child: c))
+            .toList(),
       ),
     );
   }
@@ -252,13 +228,7 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
   }
 
   Widget _buildProblemTable(BuildContext context) {
-    final filteredRows = problemRows
-        .where(
-          (row) => row['status'] != 'เสร็จสิ้น' && row['status'] != 'ยกเลิก' && row['status'] != 'รอประเมิน',
-        )
-        .toList();
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -272,22 +242,19 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTableHeader(),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
-              itemCount: filteredRows.length,
+              itemCount: activeRows.length,
               itemBuilder: (context, index) {
-                final row = filteredRows[index];
-                final bgColor = index.isEven
-                    ? const Color(0xFFFDE6F2)
-                    : const Color(0xFFFFF0F8);
-
+                final row = activeRows[index];
                 return Container(
-                  color: bgColor,
+                  color: index.isEven
+                      ? const Color(0xFFFDE6F2)
+                      : const Color(0xFFFFF0F8),
                   child: _buildTableRow(
                     context: context,
                     id: row['id'],
@@ -484,51 +451,43 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
 
   // ============================== Logic ============================== //
 
-  Future<void> fetchDashboardData() async {
+  Future<void> fetchDashboardData(String adUser) async {
     try {
-      final userData = await SessionManager.getUserData();
-      final adUser = userData['userid'];
-
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-itproblemdashboard');
-
       final response = await http.post(
-        url,
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-itproblemdashboard',
+        ),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"ad_user": adUser}),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load dashboard data');
+      final List data = json.decode(response.body);
+
+      problemRows = data.map<Map<String, dynamic>>((item) {
+        return {
+          'id': item['problem_id'],
+          'issue': item['problem_subtypename'],
+          'status': item['problem_status'],
+          'image': 'assets/img/inspect.png',
+          'statusColor': _getStatusColor(item['problem_status']),
+          'priorityColor': _getPriorityColor(item['problem_speed']),
+        };
+      }).toList();
+
+      // cache filtered list ONCE
+      activeRows = problemRows.where((row) {
+        return row['status'] != 'เสร็จสิ้น' &&
+            row['status'] != 'ยกเลิก' &&
+            row['status'] != 'รอประเมิน';
+      }).toList();
+
+      if (mounted) {
+        setState(() => isLoading = false);
       }
-
-      final List<Map<String, dynamic>> data =
-          (json.decode(response.body) as List)
-              .map((item) => item as Map<String, dynamic>)
-              .toList();
-
-      setState(() {
-        problemRows = data.map((item) {
-          final statusColor = _getStatusColor(item['problem_status'] as String);
-          final priorityColor = _getPriorityColor(
-            item['problem_speed'] as String,
-          );
-          return {
-            'id': item['problem_id'],
-            'issue': item['problem_subtypename'],
-            'status': item['problem_status'],
-            'priority': item['problem_speed'],
-            'image': 'assets/img/inspect.png',
-            'statusColor': statusColor,
-            'priorityColor': priorityColor,
-            'createdBy': item['problem_createdby'],
-            'createdAt': item['problem_createdat'],
-          };
-        }).toList();
-        isLoading = false;
-      });
     } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Error fetching dashboard: $e');
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 

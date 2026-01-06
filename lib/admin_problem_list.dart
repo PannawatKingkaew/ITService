@@ -357,9 +357,7 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => AdminProblemDetail(
-                      id: id,
-                      issue: issue,
-                      status: status,
+                      id: id
                     ),
                   ),
                 ),

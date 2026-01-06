@@ -24,6 +24,8 @@ class ChatMessagePage extends ProtectedPage {
 
 class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
   bool isLoading = true;
+  bool _isFetching = false;
+
   String? _problemStatus;
 
   final TextEditingController _messageController = TextEditingController();
@@ -31,24 +33,27 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
 
   Timer? _timer;
 
+  // ======================= API ======================= //
+
   Future<void> checkProblemStatus() async {
     try {
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/checkProblemStatus');
-
       final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/checkProblemStatus',
+        ),
+        headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"problem_id": widget.problemId}),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to check problem status');
-      }
+      if (response.statusCode != 200) return;
 
       final List<dynamic> data = jsonDecode(response.body);
 
+      if (!mounted) return;
+
       setState(() {
-        _problemStatus = data.isNotEmpty ? data[0]['problem_status'] : null;
+        _problemStatus =
+            data.isNotEmpty ? data.first['problem_status'] : null;
       });
     } catch (e) {
       debugPrint("Error checkProblemStatus: $e");
@@ -60,59 +65,65 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/changeChatStatus');
-
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"ad_user": adUser, "problem_id": widget.problemId}),
+      await http.post(
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/changeChatStatus',
+        ),
+        headers: const {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "ad_user": adUser,
+          "problem_id": widget.problemId,
+        }),
       );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load chat list');
-      }
     } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => isLoading = false);
+      debugPrint("Error changeChatStatus: $e");
     }
   }
 
-  Future<void> fetchchatmessage() async {
+  Future<void> fetchChatMessage() async {
+    if (_isFetching) return;
+    _isFetching = true;
+
     try {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-ChatMessage');
-
       final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-ChatMessage',
+        ),
+        headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"problem_id": widget.problemId}),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load chat messages');
-      }
+      if (response.statusCode != 200) return;
 
       final List<dynamic> data = jsonDecode(response.body);
+      final formatter = DateFormat('HH:mm');
+
+      final List<Map<String, dynamic>> newMessages = data.map((msg) {
+        return {
+          "text": msg["message_text"],
+          "isSender": msg["user_senderid"] == adUser,
+          "time": formatter.format(
+            DateTime.tryParse(msg["created_at"] ?? "") ?? DateTime.now(),
+          ),
+          "status": msg["notification_status"],
+        };
+      }).toList();
+
+      if (!mounted) return;
 
       setState(() {
-        _messages.clear();
-
-        for (var msg in data) {
-          _messages.add({
-            "text": msg["message_text"],
-            "isSender": msg["user_senderid"] == adUser,
-            "time": DateFormat('HH:mm').format(DateTime.now()),
-            "status": msg["notification_status"],
-          });
-        }
-
+        _messages
+          ..clear()
+          ..addAll(newMessages);
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => isLoading = false);
+      debugPrint("Error fetchChatMessage: $e");
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -121,47 +132,47 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/sendMessage');
-
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
+      await http.post(
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/sendMessage',
+        ),
+        headers: const {"Content-Type": "application/json"},
         body: jsonEncode({
           "problem_id": widget.problemId,
-          'ad_user': adUser,
-          'message': textMessage,
+          "ad_user": adUser,
+          "message": textMessage,
         }),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load chat messages');
-      }
-
-      fetchchatmessage();
+      fetchChatMessage();
     } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => isLoading = false);
+      debugPrint("Error sendMessage: $e");
     }
   }
+
+  // ======================= Lifecycle ======================= //
 
   @override
   void initState() {
     super.initState();
 
     changeChatStatus();
-    fetchchatmessage();
-    checkProblemStatus(); 
+    fetchChatMessage();
+    checkProblemStatus();
 
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      fetchchatmessage();
+      if (mounted) fetchChatMessage();
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); 
+    _timer?.cancel();
+    _messageController.dispose();
     super.dispose();
   }
+
+  // ======================= UI ======================= //
 
   @override
   Widget build(BuildContext context) {
@@ -170,33 +181,31 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFDE6EF),
       body: SafeArea(
-        top: true,
         bottom: false,
         child: Column(
           children: [
             _buildHeader(size),
             Expanded(child: _buildMessageList(size)),
-            if (_problemStatus == "เสร็จสิ้น")
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  "ปัญหานี้เสร็จสิ้นแล้ว ไม่สามารถส่งข้อความได้",
-                  style: TextStyle(
-                    fontFamily: "Kanit",
-                    fontSize: 13,
-                    color: Colors.grey,
-                  ),
-                ),
-              )
-            else
-              _buildInputArea(size),
+            _problemStatus == "เสร็จสิ้น"
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text(
+                      "ปัญหานี้เสร็จสิ้นแล้ว ไม่สามารถส่งข้อความได้",
+                      style: TextStyle(
+                        fontFamily: "Kanit",
+                        fontSize: 13,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : _buildInputArea(size),
           ],
         ),
       ),
     );
   }
 
-  // ---------------------- Header ---------------------- //
+  // ---------------- Header ---------------- //
   Widget _buildHeader(Size size) {
     return Container(
       width: double.infinity,
@@ -216,7 +225,7 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
         children: [
           Text(
             widget.problemId,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontFamily: "Kanit",
               fontSize: 16,
@@ -240,35 +249,37 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
     );
   }
 
-  // ---------------------- Message List ---------------------- //
+  // ---------------- Message List ---------------- //
   Widget _buildMessageList(Size size) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final msg = _messages[index];
-        final isLast = index == _messages.length - 1;
-
         return _buildChatBubble(
           size,
           msg["text"],
           msg["isSender"],
           msg["time"],
           msg["status"],
-          isLast,
+          index == _messages.length - 1,
         );
       },
     );
   }
 
-  // ---------------------- Chat Bubble ---------------------- //
+  // ---------------- Chat Bubble ---------------- //
   Widget _buildChatBubble(
     Size size,
     String message,
     bool isSender,
     String time,
     String? status,
-    bool isLastMessage,
+    bool isLast,
   ) {
     return Align(
       alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
@@ -283,12 +294,10 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isSender
-                ? const Radius.circular(16)
-                : const Radius.circular(4),
-            bottomRight: isSender
-                ? const Radius.circular(4)
-                : const Radius.circular(16),
+            bottomLeft:
+                isSender ? const Radius.circular(16) : const Radius.circular(4),
+            bottomRight:
+                isSender ? const Radius.circular(4) : const Radius.circular(16),
           ),
           boxShadow: const [
             BoxShadow(
@@ -299,9 +308,8 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
           ],
         ),
         child: Column(
-          crossAxisAlignment: isSender
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
               message,
@@ -312,7 +320,6 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
               ),
             ),
             const SizedBox(height: 4),
-
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -324,12 +331,11 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
                     color: Color(0xff777777),
                   ),
                 ),
-
-                if (isSender && isLastMessage) ...[
+                if (isSender && isLast) ...[
                   const SizedBox(width: 6),
                   Text(
                     status == "read" ? "อ่านแล้ว" : "ยังไม่อ่าน",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: "Kanit",
                       fontSize: 11,
                       color: Colors.green,
@@ -344,7 +350,7 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
     );
   }
 
-  // ---------------------- Input Area ---------------------- //
+  // ---------------- Input Area ---------------- //
   Widget _buildInputArea(Size size) {
     return Container(
       color: const Color(0xFFFDE6EF),
@@ -370,35 +376,22 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
               ),
               child: TextField(
                 controller: _messageController,
-                keyboardType: TextInputType.multiline,
                 maxLines: 3,
                 minLines: 1,
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: "พิมพ์ข้อความ...",
-                  hintStyle: TextStyle(
-                    fontFamily: "Kanit",
-                    fontSize: 14,
-                    color: Color(0xff888888),
-                  ),
-                ),
-                style: const TextStyle(
-                  fontFamily: "Kanit",
-                  fontSize: 14,
-                  color: Color(0xff333333),
                 ),
               ),
             ),
           ),
           SizedBox(width: size.width * 0.03),
-
           GestureDetector(
             onTap: () {
               final text = _messageController.text.trim();
-              if (text.isNotEmpty) {
-                sendMessage(text);
-                _messageController.clear();
-              }
+              if (text.isEmpty) return;
+              sendMessage(text);
+              _messageController.clear();
             },
             child: Container(
               width: size.height * 0.045,
@@ -406,8 +399,6 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFFFFC1E3), Color(0xFFFFE0F0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: const [
@@ -418,7 +409,8 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
                   ),
                 ],
               ),
-              child: const Icon(Icons.send, size: 20, color: Color(0xff333333)),
+              child:
+                  const Icon(Icons.send, size: 20, color: Color(0xff333333)),
             ),
           ),
         ],

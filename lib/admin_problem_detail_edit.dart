@@ -7,12 +7,13 @@ import 'package:flutter/material.dart';
 // Packages
 import 'package:http/http.dart' as http;
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Local pages
 import 'admin_dashboard.dart';
 import 'admin_problem_list.dart';
-import '../chat_list.dart';
-import '../login_page.dart';
+import 'chat_list.dart';
+import 'login_page.dart';
 
 // Utils
 import 'utils/session_manager.dart';
@@ -186,7 +187,7 @@ class _AdminProblemDetailEditState
                             selectedProblemType = val!;
                             selectedProblemSubType = "-";
                           });
-                          fetchProblemSubTypeList(); 
+                          fetchProblemSubTypeList();
                         },
                       ),
                       _spacer(context),
@@ -204,8 +205,7 @@ class _AdminProblemDetailEditState
 
                           if (!exists) {
                             setState(() {
-                              final newId =
-                                  'new:$val'; 
+                              final newId = 'new:$val';
 
                               final newItem = ProblemSubTypeList(
                                 id: newId,
@@ -214,8 +214,7 @@ class _AdminProblemDetailEditState
 
                               problemsSubTypeList.add(newItem);
 
-                              selectedProblemSubType =
-                                  newId; 
+                              selectedProblemSubType = newId;
                             });
                           } else {
                             setState(() {
@@ -435,11 +434,10 @@ class _AdminProblemDetailEditState
   Widget _buildSubTypeDropdown({
     required Size size,
     required String label,
-    required String value, 
+    required String value,
     required List<ProblemSubTypeList> options,
     required Function(String?) onChanged,
   }) {
-
     final List<String> names = options.map((e) => e.name).toList();
 
     final Map<String, String> nameToId = {
@@ -468,8 +466,7 @@ class _AdminProblemDetailEditState
 
                 if (nameToId.containsKey(selectedName)) {
                   onChanged(nameToId[selectedName]);
-                }
-                else {
+                } else {
                   onChanged(selectedName);
                 }
               },
@@ -561,12 +558,15 @@ class _AdminProblemDetailEditState
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: const Color(0xfff0e6ff),
-        image: DecorationImage(
-          image: NetworkImage(
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: CachedNetworkImage(
+        imageUrl:
             "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
-          ),
-          fit: BoxFit.cover,
-        ),
+        fit: BoxFit.cover,
+        placeholder: (_, __) =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
       ),
     );
   }
@@ -717,7 +717,9 @@ class _AdminProblemDetailEditState
 
   Future<void> fetchProblemData() async {
     try {
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail');
+      final url = Uri.parse(
+        'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
+      );
 
       final response = await http.post(
         url,
@@ -766,9 +768,12 @@ class _AdminProblemDetailEditState
   }
 
   Future<void> fetchProblemTypeList() async {
-    setState(() => isLoading = true);
+    if (!mounted) return;
+    setState(() => isLoading = false);
 
-    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemTypeList');
+    final url = Uri.parse(
+      'https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemTypeList',
+    );
 
     try {
       final response = await http.post(url);
@@ -792,9 +797,12 @@ class _AdminProblemDetailEditState
   }
 
   Future<void> fetchProblemSubTypeList() async {
-    setState(() => isLoading = true);
+    if (!mounted) return;
+    setState(() => isLoading = false);
 
-    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemSubTypeList');
+    final url = Uri.parse(
+      'https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemSubTypeList',
+    );
 
     try {
       final response = await http.post(
@@ -828,7 +836,8 @@ class _AdminProblemDetailEditState
 
   Future<void> saveProblemChanges() async {
     try {
-      setState(() => isLoading = true);
+      if (!mounted) return;
+      setState(() => isLoading = false);
 
       // -----------------------------------
       // 0) Get session user
@@ -836,7 +845,9 @@ class _AdminProblemDetailEditState
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/saveProblemChanges');
+      final url = Uri.parse(
+        'https://digitapp.rajavithi.go.th/ITService_API/api/saveProblemChanges',
+      );
       final sendMessageUrl = Uri.parse(
         'https://digitapp.rajavithi.go.th/ITService_API/api/sendMessageChangeType',
       );

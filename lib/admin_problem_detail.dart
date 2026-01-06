@@ -1,5 +1,12 @@
+// Dart
+import 'dart:convert';
+
 // Flutter
 import 'package:flutter/material.dart';
+
+// Packages
+import 'package:http/http.dart' as http;
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Local pages
 import 'admin_dashboard.dart';
@@ -12,21 +19,28 @@ import 'utils/protected_page.dart';
 
 class AdminProblemDetail extends ProtectedPage {
   final String id;
-  final String issue;
-  final String status;
 
-  const AdminProblemDetail({
-    super.key,
-    required this.id,
-    required this.issue,
-    required this.status,
-  });
+  const AdminProblemDetail({super.key, required this.id});
 
   @override
   State<AdminProblemDetail> createState() => _AdminProblemDetailState();
 }
 
 class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
+  bool isLoading = true;
+
+  List<Map<String, dynamic>> problemDatas = [];
+  List<Map<String, dynamic>> itLists = [];
+
+  static const String _imageBaseUrl =
+      "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/";
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProblemData();
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -35,23 +49,26 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
       backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
-          _buildHeader(size, context),
-          _buildContent(size, context),
+          _buildHeader(context, size),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildBody(context, size),
+          ),
           _buildFooter(context, size),
         ],
       ),
     );
   }
 
-  // ---------------- HEADER ---------------- //
-  Widget _buildHeader(Size size, BuildContext context) {
+  // -------------------------------- HEADER -------------------------------- //
+
+  Widget _buildHeader(BuildContext context, Size size) {
     return SafeArea(
-      top: true,
       bottom: false,
       child: Stack(
         children: [
           Container(
-            width: double.infinity,
             height: size.height * 0.06,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
@@ -69,7 +86,7 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
               ],
             ),
             child: const Text(
-              "รายละเอียดปัญหา",
+              "หน้ารายการปัญหา",
               style: TextStyle(
                 fontFamily: "Kanit",
                 fontSize: 18,
@@ -80,16 +97,204 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
           ),
           Positioned(
             top: size.height * 0.005,
-            left: 0,
+            left: size.width * 0.01,
             child: IconButton(
               icon: Image.asset(
                 'assets/img/left_arrow.png',
-                width: size.height * 0.025,
-                height: size.height * 0.025,
+                width: size.height * 0.02,
+                height: size.height * 0.02,
               ),
-              onPressed: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const AdminDashboard()),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminProblemList()),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------- BODY -------------------------------- //
+
+  Widget _buildBody(BuildContext context, Size size) {
+    final detail = problemDatas.isNotEmpty ? problemDatas.first : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: Column(
+        children: [
+          SizedBox(height: size.height * 0.02),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle("ข้อมูลผู้ใช้งาน"),
+                    _summaryRow(
+                      "ชื่อ",
+                      detail?['created_by_username'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "หน่วยงาน",
+                      detail?['company'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "เบอร์ติดต่อ",
+                      detail?['problem_callnumber'] ?? "-",
+                      highlight: true,
+                    ),
+                    Divider(color: Colors.grey[300], height: 30),
+
+                    _sectionTitle("รายละเอียดปัญหา"),
+                    _spacer(size),
+                    _summaryRow(
+                      "ปัญหา",
+                      detail?['problem_subtypename'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "ความเร็ว",
+                      detail?['problem_speed'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "อธิบายเพิ่มเติม",
+                      detail?['problem_description'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "สถานะ",
+                      detail?['problem_status'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "ผู้รับผิดชอบ",
+                      detail?['staff_username'] ?? "-",
+                      highlight: true,
+                    ),
+                    Divider(color: Colors.grey[300], height: 30),
+
+                    _sectionTitle("รูปภาพประกอบ"),
+                    _spacer(size),
+                    detail?['image1'] != null
+                        ? _buildCachedImage(detail!['image1'])
+                        : _buildEmptyImage(),
+                    if (detail?['image2'] != null) ...[
+                      _spacer(size),
+                      _buildCachedImage(detail!['image2']),
+                    ],
+                    Divider(color: Colors.grey[300], height: 30),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: size.height * 0.02),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------- IMAGE -------------------------------- //
+
+  Widget _buildCachedImage(String imageName) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl: "$_imageBaseUrl$imageName",
+        height: 250,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          height: 250,
+          color: const Color(0xfff0e6ff),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+        errorWidget: (_, __, ___) => _buildEmptyImage(),
+        memCacheHeight: 600,
+        memCacheWidth: 600,
+      ),
+    );
+  }
+
+  Widget _buildEmptyImage() {
+    return Container(
+      height: 250,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xfff0e6ff),
+      ),
+      child: const Text(
+        "ไม่มีรูปภาพแนบมา",
+        style: TextStyle(fontFamily: "Kanit", fontSize: 16),
+      ),
+    );
+  }
+
+  // -------------------------------- UI HELPERS -------------------------------- //
+
+  Widget _summaryRow(String label, String value, {bool highlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              "$label :",
+              style: const TextStyle(
+                fontFamily: "Kanit",
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              padding: highlight
+                  ? const EdgeInsets.symmetric(horizontal: 6, vertical: 4)
+                  : null,
+              decoration: highlight
+                  ? BoxDecoration(
+                      color: const Color(0xffffe0f0),
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: "Kanit",
+                  fontSize: 14,
+                  fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+                  color: highlight ? const Color(0xffc23b85) : Colors.black87,
+                ),
               ),
             ),
           ),
@@ -98,76 +303,27 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
     );
   }
 
-  // ---------------- CONTENT ---------------- //
-  Widget _buildContent(Size size, BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          children: [
-            _gap(size.height * 0.02),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _summaryRow("ชื่อ", "นายโชคดี ไม่มีทรัพย์"),
-                    _gap(size.height * 0.0075),
-                    _summaryRow("หน่วยงาน", "ศูนย์การจัดการความรู้ (KM)"),
-                    _gap(size.height * 0.0075),
-                    _summaryRow("เบอร์ติดต่อ", "00000"),
-                    _gap(size.height * 0.0075),
-                    _summaryRow("ปัญหา", "Internet ช้า"),
-                    _gap(size.height * 0.0075),
-                    _summaryRow("ความเร็ว", "ด่วน"),
-                    _gap(size.height * 0.0075),
-                    _summaryRow("อธิบายเพิ่มเติม", "อินเทอร์เน็ตช้าในชั้น 3"),
-                    _gap(size.height * 0.02),
-
-                    Container(
-                      width: double.infinity,
-                      height: size.height * 0.25,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: const Color(0xfff0e6ff),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        "รูปภาพตัวอย่าง",
-                        style: TextStyle(
-                          fontFamily: "Kanit",
-                          fontSize: 16,
-                          color: Color(0xff333333),
-                        ),
-                      ),
-                    ),
-
-                    _gap(size.height * 0.22),
-                  ],
-                ),
-              ),
-            ),
-            _gap(size.height * 0.02),
-          ],
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 5),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: "Kanit",
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFC23B85),
         ),
       ),
     );
   }
 
-  //---------------------- Footer ----------------------//
+  Widget _spacer(Size size) => SizedBox(height: size.height * 0.0075);
+
+  // -------------------------------- ACTION BUTTONS -------------------------------- //
+
+  // -------------------------------- FOOTER -------------------------------- //
+
   Widget _buildFooter(BuildContext context, Size size) {
     return Container(
       height: size.height * 0.07,
@@ -184,33 +340,37 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _footerIcon(context, Icons.home, "Home", () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminDashboard()),
-            );
-          }),
-          _footerImage(context, 'assets/img/mail.png', "Message", () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChatListPage()),
-            );
-          }),
-          _footerImage(context, 'assets/img/list.png', "List", () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminProblemList()),
-            );
-          }),
-          _footerIcon(context, Icons.logout, "Logout", () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          }),
+          _footerIcon(
+            context,
+            Icons.home,
+            "Home",
+            () => _nav(context, const AdminDashboard()),
+          ),
+          _footerImage(
+            context,
+            'assets/img/mail.png',
+            "Message",
+            () => _nav(context, const ChatListPage()),
+          ),
+          _footerImage(
+            context,
+            'assets/img/list.png',
+            "List",
+            () => _nav(context, const AdminProblemList()),
+          ),
+          _footerIcon(
+            context,
+            Icons.logout,
+            "Logout",
+            () => _nav(context, const LoginPage()),
+          ),
         ],
       ),
     );
+  }
+
+  void _nav(BuildContext context, Widget page) {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
   }
 
   Widget _footerIcon(
@@ -220,14 +380,12 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
     VoidCallback onTap,
   ) {
     final size = MediaQuery.of(context).size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: size, color: Colors.black87),
-          const SizedBox(height: 2),
+          Icon(icon, size: size),
           Text(
             label,
             style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
@@ -244,14 +402,12 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
     VoidCallback onTap,
   ) {
     final size = MediaQuery.of(context).size.height * 0.03;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(path, width: size, height: size),
-          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
@@ -261,28 +417,38 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
     );
   }
 
-  // ---------------- SMALL HELPERS ---------------- //
-  Widget _gap(double height) => SizedBox(height: height);
+  // -------------------------------- API -------------------------------- //
 
-  Widget _summaryRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(width: 110, child: Text("$label :", style: _labelStyle)),
-        Expanded(child: Text(value, style: _valueStyle)),
-      ],
+  Future<void> fetchProblemData() async {
+    final url = Uri.parse(
+      'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
     );
+
+    final res = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"problemID": widget.id}),
+    );
+
+    final data = jsonDecode(res.body);
+    setState(() {
+      problemDatas = [
+        {
+          'created_by_username': data['created_by_username'],
+          'company': data['company'],
+          'problem_callnumber': data['problem_callnumber'],
+          'problem_subtypename': data['problem_subtypename'],
+          'problem_speed': data['problem_speed'],
+          'problem_description': data['problem_description'],
+          'problem_status': data['problem_status'],
+          'staff_username': data['staff_username'],
+          'image1': data['attachment_paths']?[0],
+          'image2': data['attachment_paths']?.length > 1
+              ? data['attachment_paths'][1]
+              : null,
+        },
+      ];
+      isLoading = false;
+    });
   }
-
-  static const _labelStyle = TextStyle(
-    fontFamily: "Kanit",
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-  );
-
-  static const _valueStyle = TextStyle(
-    fontFamily: "Kanit",
-    fontSize: 14,
-    color: Color(0xff333333),
-  );
 }

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 // Packages
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Local pages
 import 'chat_list.dart';
@@ -30,8 +31,8 @@ class ITProblemDetail extends ProtectedPage {
 class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   List<Map<String, dynamic>> problemDatas = [];
   bool isLoading = true;
-  File? _image;
 
+  File? _image;
   final ImagePicker _picker = ImagePicker();
 
   static const Color _primaryColor = Color(0xFFC23B85);
@@ -43,12 +44,13 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   void initState() {
     super.initState();
     fetchProblemData();
-
   }
 
   Future<void> fetchProblemData() async {
     try {
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail');
+      final url = Uri.parse(
+        'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
+      );
 
       final response = await http.post(
         url,
@@ -79,21 +81,24 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
         isLoading = false;
       });
     } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Error fetching problem data: $e');
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() => _image = File(pickedFile.path));
+    final picked = await _picker.pickImage(source: source);
+    if (picked != null && mounted) {
+      setState(() => _image = File(picked.path));
     }
   }
 
   Future<void> markProblemAsInprogress() async {
     try {
-      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/markProblemAsInprogress');
+      final url = Uri.parse(
+        'https://digitapp.rajavithi.go.th/ITService_API/api/markProblemAsInprogress',
+      );
 
       final response = await http.post(
         url,
@@ -115,7 +120,9 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final uri = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/markProblemAsEvalueted');
+      final uri = Uri.parse(
+        'https://digitapp.rajavithi.go.th/ITService_API/api/markProblemAsEvalueted',
+      );
 
       var request = http.MultipartRequest('POST', uri);
 
@@ -124,10 +131,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
 
       if (_image != null) {
         request.files.add(
-          await http.MultipartFile.fromPath(
-            'image', 
-            _image!.path,
-          ),
+          await http.MultipartFile.fromPath('image', _image!.path),
         );
       }
 
@@ -154,7 +158,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
           isLoading
               ? Expanded(child: Center(child: CircularProgressIndicator()))
               : _buildBody(size),
-          _buildFooter(context,size),
+          _buildFooter(context, size),
         ],
       ),
     );
@@ -284,7 +288,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
                     if (status == "กำลังดำเนินการ") ...[
                       _buildImagePicker(size),
                     ],
-                    SizedBox(height: size.height * 0.075),
+                    SizedBox(height: size.height * 0.025),
 
                     Row(
                       children: [
@@ -365,18 +369,22 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     );
   }
 
-  Widget _buildImageContainer(String imageName) {
+  Widget _buildImageContainer(String? imageName) {
+    if (imageName == null) {
+      return _buildEmptyImageContainer();
+    }
+
     return Container(
-      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
       height: MediaQuery.of(context).size.height * 0.25,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: const Color(0xfff0e6ff),
         image: DecorationImage(
-          image: NetworkImage(
+          fit: BoxFit.cover,
+          image: CachedNetworkImageProvider(
             "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
           ),
-          fit: BoxFit.cover,
         ),
       ),
     );
@@ -584,7 +592,6 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     );
   }
 
-  
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0, top: 5),
@@ -603,59 +610,38 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   Widget _buildImagePicker(Size size) {
     return Column(
       children: [
-        if (_image == null)
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder: (_) => SafeArea(
-                    child: Wrap(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.photo_library),
-                          title: const Text('เลือกจากเครื่อง'),
-                          onTap: () {
-                            _pickImage(ImageSource.gallery);
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.camera_alt),
-                          title: const Text('ถ่ายรูป'),
-                          onTap: () {
-                            _pickImage(ImageSource.camera);
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
+        ElevatedButton.icon(
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              builder: (_) => SafeArea(
+                child: Wrap(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.photo_library),
+                      title: const Text('เลือกจากเครื่อง'),
+                      onTap: () {
+                        _pickImage(ImageSource.gallery);
+                        Navigator.pop(context);
+                      },
                     ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accentColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
+                    ListTile(
+                      leading: const Icon(Icons.camera_alt),
+                      title: const Text('ถ่ายรูป'),
+                      onTap: () {
+                        _pickImage(ImageSource.camera);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
               ),
-              icon: const Icon(Icons.add_a_photo, color: Colors.white),
-              label: const Text(
-                "เพิ่มรูปภาพ",
-                style: TextStyle(
-                  fontFamily: "Kanit",
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-
+            );
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 255, 192, 225)),
+          icon: const Icon(Icons.add_a_photo),
+          label: const Text("เพิ่มรูปภาพ"),
+        ),
         if (_image != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),

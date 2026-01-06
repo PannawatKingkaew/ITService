@@ -1,17 +1,14 @@
 // Flutter
 import 'package:flutter/material.dart';
 
-// Packages
-import 'user_problem_list.dart';
-
 // Local pages
 import 'chat_list.dart';
 import 'login_page.dart';
 import 'user_dashboard.dart';
 import 'user_problem_form.dart';
+import 'user_problem_list.dart';
 
 // Utils
-
 import 'utils/protected_page.dart';
 
 class UserProblemChoice extends ProtectedPage {
@@ -22,27 +19,52 @@ class UserProblemChoice extends ProtectedPage {
 }
 
 class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
+  // ================= STATIC DATA =================
+  static const List<_Category> _categories = [
+    _Category(
+      label: 'Helpdesk',
+      image: 'assets/img/tool.png',
+      gradient: [Color(0xFFFFE6F2), Color(0xFFFFCFE3)],
+    ),
+    _Category(
+      label: 'Implement',
+      image: 'assets/img/medicine.png',
+      gradient: [Color(0xFFD6F5FF), Color(0xFFBDE9FF)],
+    ),
+    _Category(
+      label: 'Network',
+      image: 'assets/img/network.png',
+      gradient: [Color(0xFFE6FFD6), Color(0xFFD1FFC0)],
+    ),
+    _Category(
+      label: 'Programmer',
+      image: 'assets/img/code.png',
+      gradient: [Color(0xFFF0E6FF), Color(0xFFDCCBFF)],
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Color(0xFFFDE6EF),
+      backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
           _buildHeader(context, size),
-          _buildContent(context, size),
+
+          // ✅ Expanded belongs HERE
+          Expanded(child: _buildContent(context, size)),
+
           _buildFooter(context, size),
         ],
       ),
     );
   }
 
-  // ---------------- HEADER ----------------
+  // ================= HEADER =================
   Widget _buildHeader(BuildContext context, Size size) {
     return SafeArea(
-      top: true,
       bottom: false,
       child: Stack(
         children: [
@@ -53,8 +75,6 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFAD3A77), Color(0xFFC23B85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
@@ -94,96 +114,71 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
     );
   }
 
-  // ---------------- CONTENT ----------------
+  // ================= CONTENT =================
   Widget _buildContent(BuildContext context, Size size) {
-    final categories = [
-      _Category(
-        label: 'Helpdesk',
-        image: 'assets/img/tool.png',
-        gradient: [const Color(0xFFFFE6F2), const Color(0xFFFFCFE3)],
-      ),
-      _Category(
-        label: 'Implement',
-        image: 'assets/img/medicine.png',
-        gradient: [const Color(0xFFD6F5FF), const Color(0xFFBDE9FF)],
-      ),
-      _Category(
-        label: 'Network',
-        image: 'assets/img/network.png',
-        gradient: [const Color(0xFFE6FFD6), const Color(0xFFD1FFC0)],
-      ),
-      _Category(
-        label: 'Programmer',
-        image: 'assets/img/code.png',
-        gradient: [const Color(0xFFF0E6FF), const Color(0xFFDCCBFF)],
-      ),
-    ];
+ 
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text(
+              "เลือกหมวดหมู่ปัญหาที่ต้องการแจ้ง",
+              style: TextStyle(
+                fontFamily: "Kanit",
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF444444),
+              ),
+            ),
+            const SizedBox(height: 18),
 
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 6,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              const Text(
-                "เลือกหมวดหมู่ปัญหาที่ต้องการแจ้ง",
-                style: TextStyle(
-                  fontFamily: "Kanit",
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF444444),
+            // GridView needs Expanded INSIDE Column
+            Expanded(
+              child: GridView.builder(
+                itemCount: _categories.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 18,
+                  mainAxisSpacing: 18,
+                  childAspectRatio: 0.9,
                 ),
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  return _buildChoiceButton(
+                    context,
+                    label: category.label,
+                    imagePath: category.image,
+                    colorStart: category.gradient.first,
+                    colorEnd: category.gradient.last,
+                    imageSize: size.height * 0.09,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              UserProblemForm(category: category.label),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: GridView.builder(
-                  itemCount: categories.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 18,
-                    mainAxisSpacing: 18,
-                    childAspectRatio: 0.9,
-                  ),
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    return _buildChoiceButton(
-                      context,
-                      label: category.label,
-                      imagePath: category.image,
-                      colorStart: category.gradient.first,
-                      colorEnd: category.gradient.last,
-                      imageSize: size.height * 0.09,
-
-                      onTap: () async {
-  
-                        if (!context.mounted) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                UserProblemForm(category: category.label),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -203,11 +198,7 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [colorStart, colorEnd],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: LinearGradient(colors: [colorStart, colorEnd]),
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
@@ -242,7 +233,7 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
     );
   }
 
-  // ---------------- FOOTER ----------------
+  // ================= FOOTER =================
   Widget _buildFooter(BuildContext context, Size size) {
     return Container(
       height: size.height * 0.07,
@@ -295,7 +286,7 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
     Size size,
     VoidCallback onTap,
   ) {
-    final iconSize = size.height * 0.03;
+    final double iconSize = size.height * 0.03;
 
     return GestureDetector(
       onTap: onTap,
@@ -320,7 +311,7 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
     Size size,
     VoidCallback onTap,
   ) {
-    final imageSize = size.height * 0.03;
+    final double imageSize = size.height * 0.03;
 
     return GestureDetector(
       onTap: onTap,
@@ -337,11 +328,9 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
       ),
     );
   }
-
-  // ============================== Logic ============================== //
 }
 
-// ---------------- MODEL ----------------
+// ================= MODEL =================
 class _Category {
   final String label;
   final String image;

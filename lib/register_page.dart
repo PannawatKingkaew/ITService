@@ -52,13 +52,20 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-
     adNumberController.text = widget.adUser ?? '';
-    final first = widget.firstName ?? '';
-    final last = widget.lastName ?? '';
-    nameController.text = '$first $last'.trim();
+    nameController.text = '${widget.firstName ?? ''} ${widget.lastName ?? ''}'
+        .trim();
     departmentController.text = widget.department ?? '';
     companyController.text = widget.company ?? '';
+  }
+
+  @override
+  void dispose() {
+    adNumberController.dispose();
+    nameController.dispose();
+    departmentController.dispose();
+    companyController.dispose();
+    super.dispose();
   }
 
   @override
@@ -360,7 +367,6 @@ class _RegisterPageState extends State<RegisterPage> {
       );
 
       if (response.statusCode == 200) {
-
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(

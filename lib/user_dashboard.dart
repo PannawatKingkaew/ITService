@@ -38,7 +38,7 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final Size size = MediaQuery.sizeOf(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDE6EF),
@@ -46,10 +46,12 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       body: Column(
         children: [
-          _buildHeader(context, size),
+          RepaintBoundary(child: _buildHeader(context, size)),
           isLoading
-              ? Expanded(child: Center(child: CircularProgressIndicator()))
-              : _buildBody(context, size, problemRows),
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : _buildBody(context, size),
           _buildFooter(context, size),
         ],
       ),
@@ -69,11 +71,7 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
         icon: const Icon(Icons.add, size: 18),
         label: const Text(
           "แจ้งปัญหา",
-          style: TextStyle(
-            fontFamily: "Kanit",
-            fontSize: 12,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontFamily: "Kanit", fontSize: 12),
         ),
         extendedPadding: const EdgeInsets.symmetric(
           horizontal: 14,
@@ -90,7 +88,6 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
   // ============================== Header ============================== //
   Widget _buildHeader(BuildContext context, Size size) {
     return SafeArea(
-      top: true,
       bottom: false,
       child: Stack(
         children: [
@@ -101,8 +98,6 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFAD3A77), Color(0xFFC23B85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
@@ -143,19 +138,23 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
   }
 
   // ============================== Body ============================== //
-  Widget _buildBody(
-    BuildContext context,
-    Size size,
-    List<Map<String, dynamic>> rows,
-  ) {
+  Widget _buildBody(BuildContext context, Size size) {
+    final List<Map<String, dynamic>> activeRows = problemRows
+        .where((r) => r['status'] != 'เสร็จสิ้น' && r['status'] != 'ยกเลิก')
+        .toList(growable: false);
+
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
         child: Column(
           children: [
             SizedBox(height: size.height * 0.02),
-            _buildSummaryCards(context),
-            Expanded(child: _buildProblemTable(context)),
+            RepaintBoundary(child: _buildSummaryCards()),
+            Expanded(
+              child: RepaintBoundary(
+                child: _buildProblemTable(context, activeRows),
+              ),
+            ),
             SizedBox(height: size.height * 0.025),
           ],
         ),
@@ -163,66 +162,53 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
     );
   }
 
-  Widget _buildSummaryCards(BuildContext context) {
-    final filteredRows = problemRows.toList();
+  Widget _buildSummaryCards() {
+    final rows = problemRows;
 
-    final total = filteredRows.where((r) => r['status'] != 'ยกเลิก').length;
-
-    final waiting = filteredRows
-        .where((r) => r['status'] == 'รอตรวจสอบ')
-        .length;
-
-    final inProgress = filteredRows
+    final total = rows.where((r) => r['status'] != 'ยกเลิก').length;
+    final waiting = rows.where((r) => r['status'] == 'รอตรวจสอบ').length;
+    final inProgress = rows
         .where(
           (r) =>
               r['status'] == 'รอดำเนินการ' || r['status'] == 'กำลังดำเนินการ',
         )
         .length;
+    final evaluating = rows.where((r) => r['status'] == 'รอประเมิน').length;
+    final done = rows.where((r) => r['status'] == 'เสร็จสิ้น').length;
 
-    final evaluating = filteredRows
-        .where((r) => r['status'] == 'รอประเมิน')
-        .length;
-
-    final done = filteredRows.where((r) => r['status'] == 'เสร็จสิ้น').length;
-
-    final cards = [
-      _summaryCard("ทั้งหมด", total, Colors.purple),
-      _summaryCard("เสร็จสิ้น", done, Colors.green),
-      _summaryCard("รอตรวจสอบ", waiting, Colors.blue),
-      _summaryCard("รอดำเนินการ", inProgress, Colors.orange),
-      _summaryCard("รอประเมิน", evaluating, Colors.orange),
-    ];
-
-    final size = MediaQuery.of(context).size;
-    final cardWidth = (size.width - 40) / 2; 
+    final size = MediaQuery.sizeOf(context);
+    final cardWidth = (size.width - 40) / 2;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         children: [
-  
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: cards.sublist(0, 2).map((card) {
-              return SizedBox(width: cardWidth, child: card);
-            }).toList(),
+            children: [
+              SizedBox(
+                width: cardWidth,
+                child: _summaryCard("ทั้งหมด", total, Colors.purple),
+              ),
+              SizedBox(
+                width: cardWidth,
+                child: _summaryCard("เสร็จสิ้น", done, Colors.green),
+              ),
+            ],
           ),
-
           const SizedBox(height: 8),
-
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: cards
-                .sublist(2)
-                .map(
-                  (card) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: card,
-                    ),
-                  ),
-                )
-                .toList(),
+            children: [
+              Expanded(child: _summaryCard("รอตรวจสอบ", waiting, Colors.blue)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _summaryCard("รอดำเนินการ", inProgress, Colors.orange),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _summaryCard("รอประเมิน", evaluating, Colors.orange),
+              ),
+            ],
           ),
         ],
       ),
@@ -253,25 +239,18 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
-              fontFamily: "Kanit",
-              fontSize: 13,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontFamily: "Kanit", fontSize: 13),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProblemTable(BuildContext context) {
-    final filteredRows = problemRows
-        .where(
-          (row) => row['status'] != 'เสร็จสิ้น' && row['status'] != 'ยกเลิก',
-        )
-        .toList();
+  Widget _buildProblemTable(
+    BuildContext context,
+    List<Map<String, dynamic>> rows,
+  ) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -285,16 +264,16 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTableHeader(),
-          const Divider(height: 1, thickness: 1),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
-              itemCount: filteredRows.length,
+              itemCount: rows.length,
+              itemExtent: 44, // fixed row height = smoother scrolling
               itemBuilder: (context, index) {
-                final row = filteredRows[index];
+                final row = rows[index];
                 final bgColor = index.isEven
                     ? const Color(0xFFFDE6F2)
                     : const Color(0xFFFFF0F8);
@@ -320,29 +299,24 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
   }
 
   Widget _buildTableHeader() {
-    const headers = ["หมายเลขปัญหา", "ปัญหา", "สถานะ"];
-    const flexValues = [3, 2, 2, 1];
-
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       color: const Color(0xFFE9DFF5),
-      child: Row(
-        children: List.generate(headers.length, (i) {
-          return Expanded(
-            flex: flexValues[i],
-            child: Center(
-              child: Text(
-                headers[i],
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontFamily: "Kanit",
-                  fontSize: 13,
-                  color: Color(0xFF333333),
-                ),
-              ),
-            ),
-          );
-        })..add(const Expanded(flex: 1, child: SizedBox())),
+      child: DefaultTextStyle(
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontFamily: "Kanit",
+          fontSize: 13,
+          color: Color(0xFF333333),
+        ),
+        child: const Row(
+          children: [
+            Expanded(flex: 3, child: Center(child: Text("หมายเลขปัญหา"))),
+            Expanded(flex: 2, child: Center(child: Text("ปัญหา"))),
+            Expanded(flex: 2, child: Center(child: Text("สถานะ"))),
+            Expanded(flex: 1, child: SizedBox()),
+          ],
+        ),
       ),
     );
   }
@@ -356,23 +330,18 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
     required Color statusColor,
     required Color priorityColor,
   }) {
-    const textColor = Color(0xFF333333);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildCell(id, flex: 3, color: priorityColor),
-          _buildCell(issue, flex: 2, color: textColor),
+          _buildCell(issue, flex: 2, color: const Color(0xFF333333)),
           _buildCell(status, flex: 2, color: statusColor),
           Expanded(
             flex: 1,
             child: Center(
               child: GestureDetector(
-                onTap: () async {
-   
-                  if (!context.mounted) return;
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -395,9 +364,9 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
       child: Center(
         child: Text(
           text,
-          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontFamily: "Kanit", fontSize: 12, color: color),
         ),
       ),
     );
@@ -455,13 +424,13 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
     String label,
     VoidCallback onTap,
   ) {
-    final size = MediaQuery.of(context).size.height * 0.03;
+    final double size = MediaQuery.sizeOf(context).height * 0.03;
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: size, color: Colors.black87),
+          Icon(icon, size: size),
           const SizedBox(height: 2),
           Text(
             label,
@@ -478,7 +447,7 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
     String label,
     VoidCallback onTap,
   ) {
-    final size = MediaQuery.of(context).size.height * 0.03;
+    final double size = MediaQuery.sizeOf(context).height * 0.03;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -502,48 +471,39 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/get-userproblemdashboard',
-      );
-
       final response = await http.post(
-        url,
+        Uri.parse(
+          'https://digitapp.rajavithi.go.th/ITService_API/api/get-userproblemdashboard',
+        ),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"ad_user": adUser}),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load dashboard data');
-      }
+      if (!mounted) return;
 
-      final List<Map<String, dynamic>> data =
-          (json.decode(response.body) as List)
-              .map((item) => item as Map<String, dynamic>)
-              .toList();
-
+      final List data = json.decode(response.body);
       setState(() {
-        problemRows = data.map((item) {
-          final statusColor = _getStatusColor(item['problem_status'] as String);
-          final priorityColor = _getPriorityColor(
-            item['problem_speed'] as String,
-          );
-          return {
-            'id': item['problem_id'],
-            'issue': item['problem_subtypename'],
-            'status': item['problem_status'],
-            'priority': item['problem_speed'],
-            'image': 'assets/img/inspect.png',
-            'statusColor': statusColor,
-            'priorityColor': priorityColor,
-            'createdBy': item['problem_createdby'],
-            'createdAt': item['problem_createdat'],
-          };
-        }).toList();
+        problemRows = data
+            .map<Map<String, dynamic>>((item) {
+              return {
+                'id': item['problem_id'],
+                'issue': item['problem_subtypename'],
+                'status': item['problem_status'],
+                'image': 'assets/img/inspect.png',
+                'statusColor': _getStatusColor(
+                  item['problem_status'] as String,
+                ),
+                'priorityColor': _getPriorityColor(
+                  item['problem_speed'] as String,
+                ),
+              };
+            })
+            .toList(growable: false);
         isLoading = false;
       });
     } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Error fetching dashboard: $e');
+      if (mounted) setState(() => isLoading = false);
+      debugPrint('Dashboard error: $e');
     }
   }
 

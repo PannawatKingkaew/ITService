@@ -358,7 +358,11 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
                   if (!context.mounted) return;
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => ITProblemDetailRead()),
+                    MaterialPageRoute(
+                    builder: (_) => ITProblemDetailRead(
+                      id: id
+                    ),
+                  ),
                   );
                 },
                 child: Image.asset(imagePath, width: 18, height: 18),
