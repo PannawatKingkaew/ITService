@@ -131,7 +131,7 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (context) => const AdminDashboard()),
                 );
               },
             ),

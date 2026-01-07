@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 // Packages
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:itservice/chat_list.dart';
 
 // Utils
 import 'utils/session_manager.dart';
@@ -241,7 +242,12 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
                 width: size.height * 0.02,
                 height: size.height * 0.02,
               ),
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatListPage()),
+                );
+              },
             ),
           ),
         ],

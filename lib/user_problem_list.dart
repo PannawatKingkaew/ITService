@@ -127,7 +127,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomePage()),
+                  MaterialPageRoute(builder: (_) => const UserDashboard()),
                 );
               },
             ),

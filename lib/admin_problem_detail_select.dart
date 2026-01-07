@@ -112,7 +112,12 @@ class _AdminProblemDetailSelectState
                 width: size.height * 0.02,
                 height: size.height * 0.02,
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                );
+              },
             ),
           ),
         ],

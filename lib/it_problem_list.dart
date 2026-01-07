@@ -131,7 +131,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (context) => const ITDashboard()),
                 );
               },
             ),

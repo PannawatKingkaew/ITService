@@ -244,7 +244,12 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
                 width: size.height * 0.025,
                 height: size.height * 0.025,
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ITDashboard()),
+                );
+              },
             ),
           ),
         ],
