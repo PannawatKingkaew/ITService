@@ -268,7 +268,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
 
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 15),
         child: Column(
           children: [
             Expanded(
@@ -282,121 +282,124 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
                     BoxShadow(
                       color: Color(0x22000000),
                       blurRadius: 6,
-                      offset: Offset(0, 3),
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
-                child: ListView(
-                  children: [
-                    _sectionTitle("ข้อมูลผู้ใช้งาน"),
-                    _summaryRow("ชื่อ", createdBy, highlight: true),
-                    _spacer(size),
-                    _summaryRow("หน่วยงาน", company, highlight: true),
-                    _spacer(size),
-                    _summaryRow("เบอร์ติดต่อ", callNumber, highlight: true),
-                    Divider(color: Colors.grey[300], height: 30),
-
-                    _sectionTitle("รายละเอียดปัญหา"),
-                    _spacer(size),
-                    _summaryRow("ปัญหา", issue, highlight: true),
-                    _spacer(size),
-                    _summaryRow("ความเร็ว", speed, highlight: true),
-                    _spacer(size),
-                    _summaryRow(
-                      "อธิบายเพิ่มเติม",
-                      description,
-                      highlight: true,
-                    ),
-                    _spacer(size),
-                    _summaryRow("สถานะ", status, highlight: true),
-                    _spacer(size),
-                    _summaryRow("ผู้รับผิดชอบ", staff, highlight: true),
-                    Divider(color: Colors.grey[300], height: 30),
-
-                    _sectionTitle("รูปภาพประกอบ"),
-                    _spacer(size),
-                    image1 != null
-                        ? _buildImageContainer(image1)
-                        : _buildEmptyImageContainer(),
-                    if (image2 != null) ...[
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionTitle("ข้อมูลผู้ใช้งาน"),
+                      _summaryRow("ชื่อ", createdBy, highlight: true),
                       _spacer(size),
-                      _buildImageContainer(image2),
-                    ],
+                      _summaryRow("หน่วยงาน", company, highlight: true),
+                      _spacer(size),
+                      _summaryRow("เบอร์ติดต่อ", callNumber, highlight: true),
+                      Divider(color: Colors.grey[300], height: 30),
 
-                    if (status == "กำลังดำเนินการ") ...[
-                      _buildImagePicker(size),
-                    ],
-                    SizedBox(height: size.height * 0.025),
+                      _sectionTitle("รายละเอียดปัญหา"),
+                      _spacer(size),
+                      _summaryRow("ปัญหา", issue, highlight: true),
+                      _spacer(size),
+                      _summaryRow("ความเร็ว", speed, highlight: true),
+                      _spacer(size),
+                      _summaryRow(
+                        "อธิบายเพิ่มเติม",
+                        description,
+                        highlight: true,
+                      ),
+                      _spacer(size),
+                      _summaryRow("สถานะ", status, highlight: true),
+                      _spacer(size),
+                      _summaryRow("ผู้รับผิดชอบ", staff, highlight: true),
+                      Divider(color: Colors.grey[300], height: 30),
 
-                    Row(
-                      children: [
-                        if (status != "รอดำเนินการ" &&
-                            status != "กำลังดำเนินการ")
-                          const Spacer(),
-
-                        _actionButton(
-                          context,
-                          "ตอบกลับ",
-                          const Color(0xFFFFF59D),
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChatMessagePage(problemId: widget.id),
-                              ),
-                            );
-                          },
-                        ),
-
-                        if (status != "รอดำเนินการ" &&
-                            status != "กำลังดำเนินการ")
-                          const Spacer(),
-
-                        if (status == "รอดำเนินการ") ...[
-                          const Spacer(),
-                          _actionButton(
-                            context,
-                            "รับเรื่อง",
-                            const Color(0xFFD0F8CE),
-                            () async {
-                              await markProblemAsInprogress();
-
-                              if (!mounted) return;
-
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ITDashboard(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-
-                        if (status == "กำลังดำเนินการ") ...[
-                          const Spacer(),
-                          _actionButton(
-                            context,
-                            "เสร็จสิ้น",
-                            const Color(0xFFD0F8CE),
-                            () async {
-                              await markProblemAsEvalueted();
-
-                              if (!mounted) return;
-
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ITDashboard(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                      _sectionTitle("รูปภาพประกอบ"),
+                      _spacer(size),
+                      image1 != null
+                          ? _buildImageContainer(image1)
+                          : _buildEmptyImageContainer(),
+                      if (image2 != null) ...[
+                        _spacer(size),
+                        _buildImageContainer(image2),
                       ],
-                    ),
-                  ],
+
+                      if (status == "กำลังดำเนินการ") ...[
+                        _buildImagePicker(size),
+                      ],
+                      SizedBox(height: size.height * 0.025),
+
+                      Row(
+                        children: [
+                          if (status != "รอดำเนินการ" &&
+                              status != "กำลังดำเนินการ")
+                            const Spacer(),
+
+                          _actionButton(
+                            context,
+                            "ตอบกลับ",
+                            const Color(0xFFFFF59D),
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ChatMessagePage(problemId: widget.id),
+                                ),
+                              );
+                            },
+                          ),
+
+                          if (status != "รอดำเนินการ" &&
+                              status != "กำลังดำเนินการ")
+                            const Spacer(),
+
+                          if (status == "รอดำเนินการ") ...[
+                            const Spacer(),
+                            _actionButton(
+                              context,
+                              "รับเรื่อง",
+                              const Color(0xFFD0F8CE),
+                              () async {
+                                await markProblemAsInprogress();
+
+                                if (!mounted) return;
+
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ITDashboard(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+
+                          if (status == "กำลังดำเนินการ") ...[
+                            const Spacer(),
+                            _actionButton(
+                              context,
+                              "เสร็จสิ้น",
+                              const Color(0xFFD0F8CE),
+                              () async {
+                                await markProblemAsEvalueted();
+
+                                if (!mounted) return;
+
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ITDashboard(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -648,40 +651,41 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   Widget _buildImagePicker(Size size) {
     return Column(
       children: [
-        ElevatedButton.icon(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (_) => SafeArea(
-                child: Wrap(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.photo_library),
-                      title: const Text('เลือกจากเครื่อง'),
-                      onTap: () {
-                        _pickImage(ImageSource.gallery);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.camera_alt),
-                      title: const Text('ถ่ายรูป'),
-                      onTap: () {
-                        _pickImage(ImageSource.camera);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
+        if (_image == null)
+          ElevatedButton.icon(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (_) => SafeArea(
+                  child: Wrap(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.photo_library),
+                        title: const Text('เลือกจากเครื่อง'),
+                        onTap: () {
+                          _pickImage(ImageSource.gallery);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.camera_alt),
+                        title: const Text('ถ่ายรูป'),
+                        onTap: () {
+                          _pickImage(ImageSource.camera);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 255, 192, 225),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 255, 192, 225),
+            ),
+            icon: const Icon(Icons.add_a_photo),
+            label: const Text("เพิ่มรูปภาพ"),
           ),
-          icon: const Icon(Icons.add_a_photo),
-          label: const Text("เพิ่มรูปภาพ"),
-        ),
         if (_image != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
