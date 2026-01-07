@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 // Packages
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 // Local pages
 import 'chat_list.dart';
@@ -244,19 +247,25 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
     );
   }
 
-  MediaType _detectImageMediaType(File file) {
-    final path = file.path.toLowerCase();
+  Future<File> convertToJpeg(File file) async {
+    final tempDir = await getTemporaryDirectory();
+    final targetPath = p.join(
+      tempDir.path,
+      '${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
 
-    if (path.endsWith('.heic') || path.endsWith('.heif')) {
-      return MediaType('image', 'heic');
+    final result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      format: CompressFormat.jpeg,
+      quality: 85,
+    );
+
+    if (result == null) {
+      throw Exception('Image conversion failed');
     }
 
-    if (path.endsWith('.png')) {
-      return MediaType('image', 'png');
-    }
-
-    // default → jpg
-    return MediaType('image', 'jpeg');
+    return File(result.path);
   }
 
   //---------------------- Submit Problem ----------------------//
@@ -313,20 +322,20 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
           body: jsonEncode({'data': payload}),
         );
       } else {
-        final file = widget.image!;
-        final mediaType = _detectImageMediaType(file);
+        // 🔥 แปลง HEIF / HEIC → JPG ก่อนส่ง
+        final jpegFile = await convertToJpeg(widget.image!);
 
         final request = http.MultipartRequest("POST", saveProblemUrl);
 
-        // JSON payload (backend เดิม)
+        // backend เดิม: รับ JSON ใน field "data"
         request.fields['data'] = jsonEncode(payload);
 
-        // Image file (รองรับ JPG / HEIC)
+        // ส่งเฉพาะ JPG เท่านั้น (backend รับชัวร์)
         request.files.add(
           await http.MultipartFile.fromPath(
             'image',
-            file.path,
-            contentType: mediaType,
+            jpegFile.path,
+            contentType: MediaType('image', 'jpeg'),
           ),
         );
 

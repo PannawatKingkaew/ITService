@@ -9,6 +9,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 // Local pages
 import 'chat_list.dart';
@@ -88,13 +91,6 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source);
-    if (picked != null && mounted) {
-      setState(() => _image = File(picked.path));
-    }
-  }
-
   Future<void> markProblemAsInprogress() async {
     try {
       final url = Uri.parse(
@@ -116,18 +112,36 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     }
   }
 
-  MediaType _detectImageMediaType(File file) {
-    final path = file.path.toLowerCase();
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 85, // ช่วยลดขนาด + บางเครื่องแปลงเป็น jpg ให้
+    );
 
-    if (path.endsWith('.heic') || path.endsWith('.heif')) {
-      return MediaType('image', 'heic');
+    if (picked != null && mounted) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
+  Future<File> convertToJpeg(File file) async {
+    final tempDir = await getTemporaryDirectory();
+    final targetPath = p.join(
+      tempDir.path,
+      '${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+
+    final result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      format: CompressFormat.jpeg,
+      quality: 85,
+    );
+
+    if (result == null) {
+      throw Exception('Image conversion failed');
     }
 
-    if (path.endsWith('.png')) {
-      return MediaType('image', 'png');
-    }
-
-    return MediaType('image', 'jpeg'); // default
+    return File(result.path);
   }
 
   Future<void> markProblemAsEvalueted() async {
@@ -141,20 +155,18 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
 
       final request = http.MultipartRequest('POST', uri);
 
-      // ----------- Fields -----------
       request.fields['problemID'] = widget.id.toString();
       request.fields['ad_user'] = adUser.toString();
 
-      // ----------- Image -----------
       if (_image != null) {
-        final file = _image!;
-        final mediaType = _detectImageMediaType(file);
+        // 🔥 จุดสำคัญที่สุด
+        final jpegFile = await convertToJpeg(_image!);
 
         request.files.add(
           await http.MultipartFile.fromPath(
             'image',
-            file.path,
-            contentType: mediaType, // 🔥 สำคัญมากสำหรับ iOS
+            jpegFile.path, // ✅ เป็น .jpg แล้ว
+            contentType: MediaType('image', 'jpeg'),
           ),
         );
       }

@@ -704,9 +704,13 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null && mounted) {
-      setState(() => _image = File(pickedFile.path));
+    final picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 85, // ช่วยลดขนาด + บางเครื่องแปลงเป็น jpg ให้
+    );
+
+    if (picked != null && mounted) {
+      setState(() => _image = File(picked.path));
     }
   }
 
