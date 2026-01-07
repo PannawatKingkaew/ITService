@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 // Packages
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 // Local pages
 import 'chat_list.dart';
@@ -107,7 +108,11 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
             end: Alignment.bottomRight,
           ),
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
           ],
         ),
         child: const Text(
@@ -166,13 +171,20 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _actionButton(context, size, "ยกเลิก", const Color(0xffffe0f0),
-                      () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UserDashboard()),
-                    );
-                  }),
+                  _actionButton(
+                    context,
+                    size,
+                    "ยกเลิก",
+                    const Color(0xffffe0f0),
+                    () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UserDashboard(),
+                        ),
+                      );
+                    },
+                  ),
                   _actionButton(
                     context,
                     size,
@@ -232,6 +244,21 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
     );
   }
 
+  MediaType _detectImageMediaType(File file) {
+    final path = file.path.toLowerCase();
+
+    if (path.endsWith('.heic') || path.endsWith('.heif')) {
+      return MediaType('image', 'heic');
+    }
+
+    if (path.endsWith('.png')) {
+      return MediaType('image', 'png');
+    }
+
+    // default → jpg
+    return MediaType('image', 'jpeg');
+  }
+
   //---------------------- Submit Problem ----------------------//
   Future<void> submitProblem(BuildContext context) async {
     final saveProblemUrl = Uri.parse(
@@ -243,6 +270,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
 
     String finalProblemID = widget.problemID;
 
+    // ---------------- SAVE NEW SUBTYPE ----------------
     if (finalProblemID == 'null' || finalProblemID.startsWith('new:')) {
       try {
         final response = await http.post(
@@ -260,6 +288,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
       } catch (_) {}
     }
 
+    // ---------------- PAYLOAD ----------------
     final payload = {
       'ad': adUser,
       'name': widget.name,
@@ -276,6 +305,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
     try {
       http.Response response;
 
+      // ---------------- NO IMAGE ----------------
       if (widget.image == null) {
         response = await http.post(
           saveProblemUrl,
@@ -283,32 +313,42 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
           body: jsonEncode({'data': payload}),
         );
       } else {
-        final request = http.MultipartRequest("POST", saveProblemUrl)
-          ..fields['data'] = jsonEncode(payload)
-          ..files.add(
-            await http.MultipartFile.fromPath(
-              "image",
-              widget.image!.path,
-            ),
-          );
+        final file = widget.image!;
+        final mediaType = _detectImageMediaType(file);
 
-        response = await http.Response.fromStream(await request.send());
+        final request = http.MultipartRequest("POST", saveProblemUrl);
+
+        // JSON payload (backend เดิม)
+        request.fields['data'] = jsonEncode(payload);
+
+        // Image file (รองรับ JPG / HEIC)
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image',
+            file.path,
+            contentType: mediaType,
+          ),
+        );
+
+        final streamed = await request.send();
+        response = await http.Response.fromStream(streamed);
       }
 
       if (!context.mounted) return;
 
+      // ---------------- RESULT ----------------
       if (response.statusCode == 200) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const UserProblemResultMessage(),
-          ),
+          MaterialPageRoute(builder: (_) => const UserProblemResultMessage()),
         );
       } else {
         _showError(context, response.body);
       }
     } catch (e) {
-      if (context.mounted) _showError(context, e.toString());
+      if (context.mounted) {
+        _showError(context, e.toString());
+      }
     }
   }
 
@@ -350,7 +390,11 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
         ],
       ),
       child: Row(
@@ -399,8 +443,10 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
         children: [
           Icon(icon, size: size, color: Colors.black87),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(fontFamily: "Kanit", fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
+          ),
         ],
       ),
     );
@@ -420,8 +466,10 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
         children: [
           Image.asset(path, width: size, height: size),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(fontFamily: "Kanit", fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
+          ),
         ],
       ),
     );
@@ -429,20 +477,24 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
 
   //---------------------- UI Helpers ----------------------//
   Widget _sectionTitle(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 10, top: 5),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: "Kanit",
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: primaryColor,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10, top: 5),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontFamily: "Kanit",
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: primaryColor,
+      ),
+    ),
+  );
 
-  Widget _summaryRow(String label, String value,
-      {bool highlight = false, double fontSize = 14}) {
+  Widget _summaryRow(
+    String label,
+    String value, {
+    bool highlight = false,
+    double fontSize = 14,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -475,11 +527,8 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
                 style: TextStyle(
                   fontFamily: "Kanit",
                   fontSize: fontSize,
-                  fontWeight:
-                      highlight ? FontWeight.w600 : FontWeight.normal,
-                  color: highlight
-                      ? const Color(0xffc23b85)
-                      : Colors.black87,
+                  fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+                  color: highlight ? const Color(0xffc23b85) : Colors.black87,
                 ),
               ),
             ),

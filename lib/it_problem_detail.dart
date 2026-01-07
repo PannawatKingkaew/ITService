@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:http_parser/http_parser.dart';
 
 // Local pages
 import 'chat_list.dart';
@@ -115,6 +116,20 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     }
   }
 
+  MediaType _detectImageMediaType(File file) {
+    final path = file.path.toLowerCase();
+
+    if (path.endsWith('.heic') || path.endsWith('.heif')) {
+      return MediaType('image', 'heic');
+    }
+
+    if (path.endsWith('.png')) {
+      return MediaType('image', 'png');
+    }
+
+    return MediaType('image', 'jpeg'); // default
+  }
+
   Future<void> markProblemAsEvalueted() async {
     try {
       final userData = await SessionManager.getUserData();
@@ -124,20 +139,31 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
         'https://digitapp.rajavithi.go.th/ITService_API/api/markProblemAsEvalueted',
       );
 
-      var request = http.MultipartRequest('POST', uri);
+      final request = http.MultipartRequest('POST', uri);
 
+      // ----------- Fields -----------
       request.fields['problemID'] = widget.id.toString();
-      request.fields['ad_user'] = adUser;
+      request.fields['ad_user'] = adUser.toString();
 
+      // ----------- Image -----------
       if (_image != null) {
+        final file = _image!;
+        final mediaType = _detectImageMediaType(file);
+
         request.files.add(
-          await http.MultipartFile.fromPath('image', _image!.path),
+          await http.MultipartFile.fromPath(
+            'image',
+            file.path,
+            contentType: mediaType, // 🔥 สำคัญมากสำหรับ iOS
+          ),
         );
       }
 
-      final response = await request.send();
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode != 200) {
+        debugPrint('Response body: ${response.body}');
         throw Exception('Failed to mark as evaluated');
       }
     } catch (e) {
@@ -638,7 +664,9 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
               ),
             );
           },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 255, 192, 225)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 255, 192, 225),
+          ),
           icon: const Icon(Icons.add_a_photo),
           label: const Text("เพิ่มรูปภาพ"),
         ),
