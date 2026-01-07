@@ -43,12 +43,12 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
       backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
-          _buildHeader(context, size),
+          RepaintBoundary(child: _buildHeader(context, size)),
           isLoading
               ? const Expanded(
                   child: Center(child: CircularProgressIndicator()),
                 )
-              : _buildBody(context, size, problemRows),
+              : _buildBody(context, size),
           _buildFooter(context, size),
         ],
       ),
@@ -111,19 +111,23 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
   }
 
   // ============================== Body ============================== //
-  Widget _buildBody(
-    BuildContext context,
-    Size size,
-    List<Map<String, dynamic>> rows,
-  ) {
+  Widget _buildBody(BuildContext context, Size size) {
+    final List<Map<String, dynamic>> activeRows = problemRows
+        .where((r) => r['status'] != 'เสร็จสิ้น' && r['status'] != 'ยกเลิก')
+        .toList(growable: false);
+
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
         child: Column(
           children: [
             SizedBox(height: size.height * 0.02),
-            _buildSummaryCards(context),
-            Expanded(child: _buildProblemTable(context, rows)),
+            RepaintBoundary(child: _buildSummaryCards()),
+            Expanded(
+              child: RepaintBoundary(
+                child: _buildProblemTable(context, activeRows),
+              ),
+            ),
             SizedBox(height: size.height * 0.025),
           ],
         ),
@@ -131,28 +135,33 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
     );
   }
 
-  Widget _buildSummaryCards(BuildContext context) {
-    final waiting = problemRows.where((r) => r['status'] == 'รอตรวจสอบ').length;
-    final cards = [_summaryCard("รอตรวจสอบ", waiting, Colors.blue)];
+  Widget _buildSummaryCards() {
+    int waiting = 0;
+
+    for (final r in problemRows) {
+      if (r['status'] == 'รอตรวจสอบ') {
+        waiting++;
+      }
+    }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        children: cards.map((card) {
-          return Expanded(
+        children: [
+          Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: card,
+              child: _summaryCard("รอตรวจสอบ", waiting, Colors.blue),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }
 
   Widget _summaryCard(String title, int count, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -161,7 +170,6 @@ class _AdminDashboardState extends ProtectedState<AdminDashboard> {
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             count.toString(),

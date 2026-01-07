@@ -38,7 +38,7 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.sizeOf(context);
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDE6EF),
@@ -165,16 +165,28 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
   Widget _buildSummaryCards() {
     final rows = problemRows;
 
-    final total = rows.where((r) => r['status'] != 'ยกเลิก').length;
-    final waiting = rows.where((r) => r['status'] == 'รอตรวจสอบ').length;
-    final inProgress = rows
-        .where(
-          (r) =>
-              r['status'] == 'รอดำเนินการ' || r['status'] == 'กำลังดำเนินการ',
-        )
-        .length;
-    final evaluating = rows.where((r) => r['status'] == 'รอประเมิน').length;
-    final done = rows.where((r) => r['status'] == 'เสร็จสิ้น').length;
+    int total = 0;
+    int waiting = 0;
+    int inProgress = 0;
+    int evaluating = 0;
+    int done = 0;
+
+    for (final r in rows) {
+      final status = r['status'];
+      if (status == null || status == 'ยกเลิก') continue;
+
+      total++;
+
+      if (status == 'รอตรวจสอบ') {
+        waiting++;
+      } else if (status == 'รอดำเนินการ' || status == 'กำลังดำเนินการ') {
+        inProgress++;
+      } else if (status == 'รอประเมิน') {
+        evaluating++;
+      } else if (status == 'เสร็จสิ้น') {
+        done++;
+      }
+    }
 
     final size = MediaQuery.sizeOf(context);
     final cardWidth = (size.width - 40) / 2;

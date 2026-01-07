@@ -56,12 +56,12 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
       backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
-          _buildHeader(context, size),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildBody(context, size),
-          ),
+          RepaintBoundary(child: _buildHeader(context, size)),
+          isLoading
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : _buildBody(context, size),
           _buildFooter(context, size),
         ],
       ),
@@ -71,15 +71,26 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
   // ============================== Header ============================== //
   Widget _buildHeader(BuildContext context, Size size) {
     return SafeArea(
+      bottom: false,
       child: Stack(
         children: [
           Container(
+            width: double.infinity,
             height: size.height * 0.06,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFAD3A77), Color(0xFFC23B85)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
             child: const Text(
               "รายการปัญหา",
@@ -92,12 +103,13 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
             ),
           ),
           Positioned(
-            left: 6,
-            top: 4,
+            top: size.height * 0.005,
+            left: size.width * 0.005,
             child: IconButton(
               icon: Image.asset(
                 'assets/img/left_arrow.png',
                 width: size.height * 0.025,
+                height: size.height * 0.025,
               ),
               onPressed: () => Navigator.push(
                 context,
@@ -142,40 +154,49 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
 
   // ============================== Body ============================== //
   Widget _buildBody(BuildContext context, Size size) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: Column(
-        children: [
-          _buildSummaryCards(),
-          Expanded(child: _buildProblemTable(context)),
-          SizedBox(height: size.height * 0.025),
-        ],
+    final List<Map<String, dynamic>> activeRows = problemRows
+        .where((r) => r['status'] != 'เสร็จสิ้น' && r['status'] != 'ยกเลิก')
+        .toList(growable: false);
+
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        child: Column(
+          children: [
+            SizedBox(height: size.height * 0.02),
+            RepaintBoundary(child: _buildSummaryCards()),
+            Expanded(
+              child: RepaintBoundary(
+                child: _buildProblemTable(context, activeRows),
+              ),
+            ),
+            SizedBox(height: size.height * 0.025),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSummaryCards() {
-    final total = problemRows.where((r) => r['status'] != 'ยกเลิก').length;
+    int total = 0;
+    int done = 0;
+    int inProgress = 0;
+    int evaluating = 0;
 
-    final done = problemRows.where((r) => r['status'] == 'เสร็จสิ้น').length;
+    for (final r in problemRows) {
+      final status = r['status'];
+      if (status == null || status == 'ยกเลิก') continue;
 
-    final inProgress = problemRows
-        .where(
-          (r) =>
-              r['status'] == 'รอดำเนินการ' || r['status'] == 'กำลังดำเนินการ',
-        )
-        .length;
+      total++;
 
-    final evaluating = problemRows
-        .where((r) => r['status'] == 'รอประเมิน')
-        .length;
-
-    final cards = [
-      _summaryCard("ทั้งหมด", total, Colors.purple),
-      _summaryCard("เสร็จสิ้น", done, Colors.green),
-      _summaryCard("รอดำเนินการ", inProgress, Colors.orange),
-      _summaryCard("รอประเมิน", evaluating, Colors.orange),
-    ];
+      if (status == 'เสร็จสิ้น') {
+        done++;
+      } else if (status == 'รอดำเนินการ' || status == 'กำลังดำเนินการ') {
+        inProgress++;
+      } else if (status == 'รอประเมิน') {
+        evaluating++;
+      }
+    }
 
     final size = MediaQuery.of(context).size;
     final cardWidth = (size.width - 40) / 4;
@@ -184,16 +205,30 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: cards
-            .map((c) => SizedBox(width: cardWidth, child: c))
-            .toList(),
+        children: [
+          SizedBox(
+            width: cardWidth,
+            child: _summaryCard("ทั้งหมด", total, Colors.purple),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _summaryCard("เสร็จสิ้น", done, Colors.green),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _summaryCard("รอดำเนินการ", inProgress, Colors.orange),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _summaryCard("รอประเมิน", evaluating, Colors.orange),
+          ),
+        ],
       ),
     );
   }
 
   Widget _summaryCard(String title, int count, Color color) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 5),
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -216,18 +251,17 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
-              fontFamily: "Kanit",
-              fontSize: 13,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontFamily: "Kanit", fontSize: 13),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProblemTable(BuildContext context) {
+  Widget _buildProblemTable(
+    BuildContext context,
+    List<Map<String, dynamic>> rows,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
