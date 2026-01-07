@@ -230,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
           valueListenable: _isLoading,
           builder: (_, loading, __) {
             return ElevatedButton(
-              onPressed: loading ? null : _handleLogin,
+              onPressed: loading ? null : _handleLoginForTest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC23B85),
                 shape: RoundedRectangleBorder(

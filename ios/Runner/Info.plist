@@ -45,5 +45,17 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- Camera -->
+	<key>NSCameraUsageDescription</key>
+	<string>แอปต้องการใช้กล้องเพื่อถ่ายรูปประกอบการแจ้งปัญหา</string>
+
+	<!-- Photo Library -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>แอปต้องการเข้าถึงรูปภาพเพื่อแนบประกอบการแจ้งปัญหา</string>
+
+	<!-- Photo Library (iOS 14+) -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>แอปต้องการบันทึกรูปภาพลงเครื่อง</string>
 </dict>
 </plist>

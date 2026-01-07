@@ -125,7 +125,7 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         itemCount: chatList.length,
         itemBuilder: (context, index) {
