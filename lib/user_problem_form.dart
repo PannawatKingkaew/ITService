@@ -335,13 +335,13 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     bool searchVisible = true,
     Function(String?)? onChanged,
   }) {
-    final double itemHeight = 32;
+    const double itemHeight = 32;
     final double searchBoxHeight = searchVisible ? 36 : 0;
-    final EdgeInsets fieldPadding = const EdgeInsets.symmetric(
+    const EdgeInsets fieldPadding = EdgeInsets.symmetric(
       horizontal: 10,
       vertical: 0,
     );
-    final double fieldHeight = 36;
+    const double fieldHeight = 36;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -194,7 +194,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
         children: [
           _buildHeader(size),
           isLoading
-              ? Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(child: Center(child: CircularProgressIndicator()))
               : _buildBody(size),
           _buildFooter(context, size),
         ],

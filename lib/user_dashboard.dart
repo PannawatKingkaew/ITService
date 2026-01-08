@@ -314,14 +314,14 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       color: const Color(0xFFE9DFF5),
-      child: DefaultTextStyle(
-        style: const TextStyle(
+      child: const DefaultTextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
           fontFamily: "Kanit",
           fontSize: 13,
           color: Color(0xFF333333),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Expanded(flex: 3, child: Center(child: Text("หมายเลขปัญหา"))),
             Expanded(flex: 2, child: Center(child: Text("ปัญหา"))),

@@ -165,8 +165,8 @@ class _RegisterPageState extends State<RegisterPage> {
           bottomRight: Radius.circular(24),
         ),
       ),
-      child: Column(
-        children: const [
+       child: const Column(
+        children: [
           Text(
             "ตรวจสอบข้อมูล",
             style: TextStyle(

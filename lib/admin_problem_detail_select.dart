@@ -358,9 +358,9 @@ class _AdminProblemDetailSelectState
     bool searchVisible = true,
     Function(Map<String, dynamic>?)? onChanged,
   }) {
-    final double itemHeight = 32;
+    const double itemHeight = 32;
     final double searchBoxHeight = searchVisible ? 36 : 0;
-    final EdgeInsets fieldPadding = const EdgeInsets.symmetric(
+    const EdgeInsets fieldPadding = EdgeInsets.symmetric(
       horizontal: 10,
       vertical: 0,
     );
@@ -457,7 +457,8 @@ class _AdminProblemDetailSelectState
         _actionButton("บันทึก", const Color(0xffd0f8ce), () async {
           if (_selectedIT == null) return;
           await assignStaff(_selectedIT!['id']);
-          if (!mounted) return;
+
+          if (!context.mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const AdminDashboard()),

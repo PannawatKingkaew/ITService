@@ -43,7 +43,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Color(0xFFFDE6EF),
+      backgroundColor: const Color(0xFFFDE6EF),
       body: Column(
         children: [
           _buildHeader(size),
@@ -193,7 +193,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
       height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Color(0xFFC23B85), width: 1),
+        border: Border.all(color: const Color(0xFFC23B85), width: 1),
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
       ),

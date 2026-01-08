@@ -67,7 +67,7 @@ class _AdminProblemDetailEditState
         children: [
           _buildHeader(size),
           isLoading
-              ? Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(child: Center(child: CircularProgressIndicator()))
               : _buildContent(size),
           _buildFooter(context, size),
         ],
@@ -253,7 +253,7 @@ class _AdminProblemDetailEditState
                       ],
 
                       Divider(color: Colors.grey[300], height: 30),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,

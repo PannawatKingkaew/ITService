@@ -203,14 +203,12 @@ class _LoginPageState extends State<LoginPage> {
                 obscure ? Icons.visibility : Icons.visibility_off,
                 color: Colors.grey,
               ),
-              onPressed: () =>
-                  _obscurePassword.value = !_obscurePassword.value,
+              onPressed: () => _obscurePassword.value = !_obscurePassword.value,
             ),
             filled: true,
             fillColor: const Color(0xFFF8F5F8),
             hintText: "กรอกรหัสผ่านของคุณ",
-            hintStyle:
-                const TextStyle(fontFamily: "Kanit", color: Colors.grey),
+            hintStyle: const TextStyle(fontFamily: "Kanit", color: Colors.grey),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
@@ -303,6 +301,8 @@ class _LoginPageState extends State<LoginPage> {
 
       if (checkResponse.statusCode == 200 && checkData['exists'] == true) {
         await SessionManager.saveUserData(checkData['user']);
+        if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
@@ -382,8 +382,7 @@ class _LoginPageState extends State<LoginPage> {
           "เข้าสู่ระบบไม่สำเร็จ",
           style: TextStyle(fontFamily: "Kanit", fontWeight: FontWeight.w600),
         ),
-        content: Text(message,
-            style: const TextStyle(fontFamily: "Kanit")),
+        content: Text(message, style: const TextStyle(fontFamily: "Kanit")),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
