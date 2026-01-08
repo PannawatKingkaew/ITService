@@ -231,25 +231,28 @@ class _AdminProblemDetailSelectState
       borderRadius: BorderRadius.circular(16),
       child: CachedNetworkImage(
         imageUrl: "$_imageBaseUrl$imageName",
-        height: 250,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.fitWidth, // ✅ auto height
         placeholder: (_, __) => Container(
-          height: 250,
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 200, // ✅ prevents collapse
+          ),
           color: const Color(0xfff0e6ff),
           alignment: Alignment.center,
           child: const CircularProgressIndicator(strokeWidth: 2),
         ),
         errorWidget: (_, __, ___) => _buildEmptyImage(),
-        memCacheHeight: 600,
-        memCacheWidth: 600,
       ),
     );
   }
 
   Widget _buildEmptyImage() {
     return Container(
-      height: 250,
+      width: double.infinity,
+      constraints: const BoxConstraints(
+        minHeight: 180, // looks like an image placeholder
+      ),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -257,11 +260,14 @@ class _AdminProblemDetailSelectState
       ),
       child: const Text(
         "ไม่มีรูปภาพแนบมา",
-        style: TextStyle(fontFamily: "Kanit", fontSize: 16),
+        style: TextStyle(
+          fontFamily: "Kanit",
+          fontSize: 16,
+          color: Color(0xff333333),
+        ),
       ),
     );
   }
-
   // -------------------------------- UI HELPERS -------------------------------- //
 
   Widget _summaryRow(String label, String value, {bool highlight = false}) {

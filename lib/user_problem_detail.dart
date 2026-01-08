@@ -65,7 +65,6 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
 
     final double headerHeight = size.height * 0.06;
     final double footerHeight = size.height * 0.07;
-    final double imageHeight = size.height * 0.25;
     final double spacer = size.height * 0.0075;
 
     return Scaffold(
@@ -77,7 +76,7 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
               ? const Expanded(
                   child: Center(child: CircularProgressIndicator()),
                 )
-              : _buildBody(context, size, imageHeight, spacer),
+              : _buildBody(context, size, spacer),
           _buildFooter(context, footerHeight),
         ],
       ),
@@ -128,12 +127,7 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
   }
 
   // ---------------- BODY ----------------
-  Widget _buildBody(
-    BuildContext context,
-    Size size,
-    double imageHeight,
-    double spacer,
-  ) {
+  Widget _buildBody(BuildContext context, Size size, double spacer) {
     final detail = problemDatas.first;
 
     return Expanded(
@@ -184,13 +178,13 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
 
                       _sectionTitle("รูปภาพประกอบ"),
                       if (detail['image1'] != null)
-                        _buildNetworkImage(detail['image1'], imageHeight)
+                        _buildNetworkImage(detail['image1'])
                       else
-                        _buildEmptyImage(imageHeight),
+                        _buildEmptyImage(),
 
                       if (detail['image2'] != null) ...[
                         SizedBox(height: spacer),
-                        _buildNetworkImage(detail['image2'], imageHeight),
+                        _buildNetworkImage(detail['image2']),
                       ],
 
                       Divider(color: Colors.grey[300], height: 30),
@@ -306,27 +300,31 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
     );
   }
 
-  Widget _buildNetworkImage(String imageName, double height) {
-    return RepaintBoundary(
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+  Widget _buildNetworkImage(String imageName) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl:
+            "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
+        fit: BoxFit.fitWidth, // auto height
+        width: double.infinity,
+        placeholder: (context, url) => Container(
+          height: 200,
           color: const Color(0xfff0e6ff),
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(
-              "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
-            ),
-            fit: BoxFit.cover,
-          ),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
         ),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
       ),
     );
   }
 
-  Widget _buildEmptyImage(double height) {
+  Widget _buildEmptyImage() {
     return Container(
-      height: height,
+      width: double.infinity,
+      constraints: const BoxConstraints(
+        minHeight: 180, // looks like an image placeholder
+      ),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

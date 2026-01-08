@@ -240,8 +240,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
       child: Image.file(
         widget.image!,
         width: double.infinity,
-        height: 220,
-        fit: BoxFit.cover,
+        fit: BoxFit.fitWidth,
         cacheWidth: 800, // ⭐ performance critical
       ),
     );

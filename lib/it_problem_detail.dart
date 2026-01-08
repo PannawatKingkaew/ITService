@@ -44,6 +44,9 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   static const Color _backgroundColor = Color(0xFFFDE6EF);
   static const Color _cardColor = Colors.white;
 
+  static const String _imageBaseUrl =
+      "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/";
+
   @override
   void initState() {
     super.initState();
@@ -194,7 +197,9 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
         children: [
           _buildHeader(size),
           isLoading
-              ? const Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
               : _buildBody(size),
           _buildFooter(context, size),
         ],
@@ -420,17 +425,20 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
       return _buildEmptyImageContainer();
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      height: MediaQuery.of(context).size.height * 0.25,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xfff0e6ff),
-        image: DecorationImage(
-          fit: BoxFit.cover,
-          image: CachedNetworkImageProvider(
-            "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl: "$_imageBaseUrl$imageName",
+        width: double.infinity,
+        fit: BoxFit.fitWidth, // ✅ auto height
+        placeholder: (_, __) => Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 200, // ✅ prevents collapse
           ),
+          color: const Color(0xfff0e6ff),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );
@@ -439,12 +447,14 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
   Widget _buildEmptyImageContainer() {
     return Container(
       width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.25,
+      constraints: const BoxConstraints(
+        minHeight: 180, // looks like an image placeholder
+      ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: const Color(0xfff0e6ff),
       ),
-      alignment: Alignment.center,
       child: const Text(
         "ไม่มีรูปภาพแนบมา",
         style: TextStyle(

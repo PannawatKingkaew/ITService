@@ -106,7 +106,9 @@ class _ITProblemDetailReadState extends ProtectedState<ITProblemDetailRead> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ITProblemList()),
+                  MaterialPageRoute(
+                    builder: (context) => const ITProblemList(),
+                  ),
                 );
               },
             ),
@@ -225,25 +227,28 @@ class _ITProblemDetailReadState extends ProtectedState<ITProblemDetailRead> {
       borderRadius: BorderRadius.circular(16),
       child: CachedNetworkImage(
         imageUrl: "$_imageBaseUrl$imageName",
-        height: 250,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.fitWidth, // ✅ auto height
         placeholder: (_, __) => Container(
-          height: 250,
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 200, // ✅ prevents collapse
+          ),
           color: const Color(0xfff0e6ff),
           alignment: Alignment.center,
           child: const CircularProgressIndicator(strokeWidth: 2),
         ),
         errorWidget: (_, __, ___) => _buildEmptyImage(),
-        memCacheHeight: 600,
-        memCacheWidth: 600,
       ),
     );
   }
 
   Widget _buildEmptyImage() {
     return Container(
-      height: 250,
+      width: double.infinity,
+      constraints: const BoxConstraints(
+        minHeight: 180, // looks like an image placeholder
+      ),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -251,7 +256,11 @@ class _ITProblemDetailReadState extends ProtectedState<ITProblemDetailRead> {
       ),
       child: const Text(
         "ไม่มีรูปภาพแนบมา",
-        style: TextStyle(fontFamily: "Kanit", fontSize: 16),
+        style: TextStyle(
+          fontFamily: "Kanit",
+          fontSize: 16,
+          color: Color(0xff333333),
+        ),
       ),
     );
   }
@@ -441,7 +450,7 @@ class _ITProblemDetailReadState extends ProtectedState<ITProblemDetailRead> {
           'problem_description': data['problem_description'],
           'problem_status': data['problem_status'],
           'staff_username': data['staff_username'],
-          'image1': data['attachment_paths']?[0],
+          'image1': data['attachment_paths'].isNotEmpty ? data['attachment_paths'][0] : null,
           'image2': data['attachment_paths']?.length > 1
               ? data['attachment_paths'][1]
               : null,

@@ -48,6 +48,9 @@ class _AdminProblemDetailEditState
   bool isNewSubType = false;
   String? selectedSubType;
 
+  static const String _imageBaseUrl =
+      "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/";
+
   @override
   void initState() {
     super.initState();
@@ -67,7 +70,9 @@ class _AdminProblemDetailEditState
         children: [
           _buildHeader(size),
           isLoading
-              ? const Expanded(child: Center(child: CircularProgressIndicator()))
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
               : _buildContent(size),
           _buildFooter(context, size),
         ],
@@ -552,21 +557,22 @@ class _AdminProblemDetailEditState
   }
 
   Widget _buildImageContainer(String imageName) {
-    return Container(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.25,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xfff0e6ff),
-      ),
-      clipBehavior: Clip.antiAlias,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
       child: CachedNetworkImage(
-        imageUrl:
-            "https://digitapp.rajavithi.go.th/ITService_API/storage/problem_images/$imageName",
-        fit: BoxFit.cover,
-        placeholder: (_, __) =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
+        imageUrl: "$_imageBaseUrl$imageName",
+        width: double.infinity,
+        fit: BoxFit.fitWidth, // ✅ auto height
+        placeholder: (_, __) => Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 200, // ✅ prevents collapse
+          ),
+          color: const Color(0xfff0e6ff),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+        errorWidget: (_, __, ___) => _buildEmptyImageContainer(),
       ),
     );
   }
@@ -574,12 +580,14 @@ class _AdminProblemDetailEditState
   Widget _buildEmptyImageContainer() {
     return Container(
       width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.25,
+      constraints: const BoxConstraints(
+        minHeight: 180, // looks like an image placeholder
+      ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: const Color(0xfff0e6ff),
       ),
-      alignment: Alignment.center,
       child: const Text(
         "ไม่มีรูปภาพแนบมา",
         style: TextStyle(
