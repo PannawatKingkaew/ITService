@@ -25,17 +25,17 @@ class ITProblemList extends ProtectedPage {
 }
 
 class _ITProblemListState extends ProtectedState<ITProblemList> {
-
   String? selectedStatus;
   String? sortOption;
   bool showAllUsers = false;
+  List<String> _allStatuses = [];
 
-  String? adUser; 
+  String? adUser;
 
   @override
   void initState() {
     super.initState();
-    fetchProblems(); 
+    fetchProblems();
   }
 
   @override
@@ -77,7 +77,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
                     );
             },
           ),
-          _buildFooter(context,size),
+          _buildFooter(context, size),
         ],
       ),
     );
@@ -142,10 +142,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
 
   //---------------------- Filter Bar ----------------------//
   Widget _buildFilterBar(Size size, List<Map<String, dynamic>> rows) {
-    final uniqueStatuses = rows
-        .map((e) => e['status'] as String)
-        .toSet()
-        .toList();
+    final uniqueStatuses = _allStatuses;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -204,7 +201,11 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
             label,
             style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
           ),
-          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFC23B85), size: 18),
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            color: Color(0xFFC23B85),
+            size: 18,
+          ),
           items: items
               .map(
                 (val) => DropdownMenuItem<String>(
@@ -353,15 +354,12 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
             child: Center(
               child: GestureDetector(
                 onTap: () async {
-             
                   if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                    builder: (_) => ITProblemDetailRead(
-                      id: id
+                      builder: (_) => ITProblemDetailRead(id: id),
                     ),
-                  ),
                   );
                 },
                 child: Image.asset(imagePath, width: 18, height: 18),
@@ -481,12 +479,13 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
     );
   }
 
-
   Future<List<Map<String, dynamic>>> fetchProblems() async {
     final userData = await SessionManager.getUserData();
     final adUser = userData['userid'];
 
-    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-itproblemlist');
+    final url = Uri.parse(
+      'https://digitapp.rajavithi.go.th/ITService_API/api/get-itproblemlist',
+    );
 
     final response = await http.post(
       url,
@@ -504,7 +503,7 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
         .map((item) => item as Map<String, dynamic>)
         .toList();
 
-    return data.map((item) {
+    final rows = data.map((item) {
       final statusColor = _getStatusColor(item['problem_status'] as String);
       final priorityColor = _getPriorityColor(item['problem_speed'] as String);
       return {
@@ -519,6 +518,11 @@ class _ITProblemListState extends ProtectedState<ITProblemList> {
         'createdAt': item['problem_createdat'] as String,
       };
     }).toList();
+
+    if (_allStatuses.isEmpty) {
+      _allStatuses = rows.map((e) => e['status'] as String).toSet().toList();
+    }
+    return rows;
   }
 
   Color _getStatusColor(String status) {

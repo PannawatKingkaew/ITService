@@ -220,7 +220,7 @@ class _ITDashboardState extends ProtectedState<ITDashboard> {
           ),
           SizedBox(
             width: cardWidth,
-            child: _summaryCard("รอประเมิน", evaluating, Colors.orange),
+            child: _summaryCard("รอประเมิน", evaluating, Colors.indigo),
           ),
         ],
       ),

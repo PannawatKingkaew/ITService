@@ -25,17 +25,17 @@ class AdminProblemList extends ProtectedPage {
 }
 
 class _AdminProblemListState extends ProtectedState<AdminProblemList> {
-
   String? selectedStatus;
   String? sortOption;
   bool showAllUsers = false;
+  List<String> _allStatuses = [];
 
-  String? adUser; 
+  String? adUser;
 
   @override
   void initState() {
     super.initState();
-    fetchProblems(); 
+    fetchProblems();
   }
 
   @override
@@ -130,7 +130,9 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AdminDashboard()),
+                  MaterialPageRoute(
+                    builder: (context) => const AdminDashboard(),
+                  ),
                 );
               },
             ),
@@ -142,10 +144,7 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
 
   //---------------------- Filter Bar ----------------------//
   Widget _buildFilterBar(Size size, List<Map<String, dynamic>> rows) {
-    final uniqueStatuses = rows
-        .map((e) => e['status'] as String)
-        .toSet()
-        .toList();
+    final uniqueStatuses = _allStatuses;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -204,7 +203,11 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
             label,
             style: const TextStyle(fontFamily: "Kanit", fontSize: 12),
           ),
-          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFC23B85), size: 18),
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            color: Color(0xFFC23B85),
+            size: 18,
+          ),
           items: items
               .map(
                 (val) => DropdownMenuItem<String>(
@@ -354,11 +357,7 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
               child: GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => AdminProblemDetail(
-                      id: id
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (_) => AdminProblemDetail(id: id)),
                 ),
                 child: Image.asset(imagePath, width: 18, height: 18),
               ),
@@ -481,7 +480,9 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
     final userData = await SessionManager.getUserData();
     final category = userData['team'];
 
-    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-adminproblemlist');
+    final url = Uri.parse(
+      'https://digitapp.rajavithi.go.th/ITService_API/api/get-adminproblemlist',
+    );
 
     final response = await http.post(
       url,
@@ -499,7 +500,7 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
         .map((item) => item as Map<String, dynamic>)
         .toList();
 
-    return data.map((item) {
+    final rows = data.map((item) {
       final statusColor = _getStatusColor(item['problem_status'] as String);
       final priorityColor = _getPriorityColor(item['problem_speed'] as String);
       return {
@@ -514,6 +515,11 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
         'createdAt': item['problem_createdat'] as String,
       };
     }).toList();
+
+    if (_allStatuses.isEmpty) {
+      _allStatuses = rows.map((e) => e['status'] as String).toSet().toList();
+    }
+    return rows;
   }
 
   Color _getStatusColor(String status) {
@@ -554,7 +560,6 @@ class _AdminProblemListState extends ProtectedState<AdminProblemList> {
   List<Map<String, dynamic>> _applyFiltersAndSort(
     List<Map<String, dynamic>> rows,
   ) {
-  
     if (!showAllUsers && adUser != null) {
       rows = rows.where((row) => row['createdBy'] == adUser).toList();
     }

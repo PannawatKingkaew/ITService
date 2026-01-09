@@ -28,6 +28,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
   String? selectedStatus;
   String? sortOption;
   bool showAllUsers = false;
+  List<String> _allStatuses = [];
 
   String? adUser;
 
@@ -159,10 +160,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
   }
 
   Widget _buildFilterBar(Size size, List<Map<String, dynamic>> rows) {
-    final uniqueStatuses = rows
-        .map((e) => e['status'] as String)
-        .toSet()
-        .toList();
+    final uniqueStatuses = _allStatuses;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -493,7 +491,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
 
     final List data = json.decode(response.body);
 
-    return data.map<Map<String, dynamic>>((item) {
+    final rows = data.map<Map<String, dynamic>>((item) {
       return {
         'id': item['problem_id'],
         'issue': item['problem_subtypename'],
@@ -506,6 +504,11 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
         'createdAt': item['problem_createdat'],
       };
     }).toList();
+
+    if (_allStatuses.isEmpty) {
+      _allStatuses = rows.map((e) => e['status'] as String).toSet().toList();
+    }
+    return rows;
   }
 
   Color _getStatusColor(String status) {
@@ -543,6 +546,7 @@ class _UserProblemListState extends ProtectedState<UserProblemList> {
   void _toggleShowAllUsers() {
     setState(() {
       showAllUsers = !showAllUsers;
+      _allStatuses.clear();
       _problemFuture = fetchProblems();
     });
   }

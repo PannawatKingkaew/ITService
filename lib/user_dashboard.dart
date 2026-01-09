@@ -211,14 +211,14 @@ class _UserDashboardState extends ProtectedState<UserDashboard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _summaryCard("รอตรวจสอบ", waiting, Colors.blue)),
+              Expanded(child: _summaryCard("รอตรวจสอบ", waiting, Colors.red)),
               const SizedBox(width: 8),
               Expanded(
                 child: _summaryCard("รอดำเนินการ", inProgress, Colors.orange),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _summaryCard("รอประเมิน", evaluating, Colors.orange),
+                child: _summaryCard("รอประเมิน", evaluating, Colors.indigo),
               ),
             ],
           ),
