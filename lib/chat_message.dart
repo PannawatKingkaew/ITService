@@ -53,8 +53,7 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
       if (!mounted) return;
 
       setState(() {
-        _problemStatus =
-            data.isNotEmpty ? data.first['problem_status'] : null;
+        _problemStatus = data.isNotEmpty ? data.first['problem_status'] : null;
       });
     } catch (e) {
       debugPrint("Error checkProblemStatus: $e");
@@ -71,10 +70,7 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
           'https://digitapp.rajavithi.go.th/ITService_API/api/changeChatStatus',
         ),
         headers: const {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ad_user": adUser,
-          "problem_id": widget.problemId,
-        }),
+        body: jsonEncode({"ad_user": adUser, "problem_id": widget.problemId}),
       );
     } catch (e) {
       debugPrint("Error changeChatStatus: $e");
@@ -243,10 +239,9 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
                 height: size.height * 0.02,
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ChatListPage()),
-                );
+                Navigator.popUntil(context, (route) {
+                  return route.settings.name != '/chatMessage';
+                });
               },
             ),
           ),
@@ -300,10 +295,12 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft:
-                isSender ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight:
-                isSender ? const Radius.circular(4) : const Radius.circular(16),
+            bottomLeft: isSender
+                ? const Radius.circular(16)
+                : const Radius.circular(4),
+            bottomRight: isSender
+                ? const Radius.circular(4)
+                : const Radius.circular(16),
           ),
           boxShadow: const [
             BoxShadow(
@@ -314,8 +311,9 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
           ],
         ),
         child: Column(
-          crossAxisAlignment:
-              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSender
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message,
@@ -415,8 +413,7 @@ class _ChatMessagePageState extends ProtectedState<ChatMessagePage> {
                   ),
                 ],
               ),
-              child:
-                  const Icon(Icons.send, size: 20, color: Color(0xff333333)),
+              child: const Icon(Icons.send, size: 20, color: Color(0xff333333)),
             ),
           ),
         ],

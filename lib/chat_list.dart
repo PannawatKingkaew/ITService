@@ -154,6 +154,7 @@ class _ChatListPageState extends ProtectedState<ChatListPage> {
         final shouldReload = await Navigator.push(
           context,
           MaterialPageRoute(
+            settings: const RouteSettings(name: '/chatMessage'),
             builder: (_) => ChatMessagePage(problemId: problemId),
           ),
         );
