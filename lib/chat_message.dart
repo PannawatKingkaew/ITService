@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 // Packages
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:itservice/chat_list.dart';
 
 // Utils
 import 'utils/session_manager.dart';
