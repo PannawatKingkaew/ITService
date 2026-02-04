@@ -74,7 +74,8 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
             'id': data['problem_id'],
             'created_by_username': data['created_by_username'],
             'company': data['company'],
-            'problem_location': data['problem_location'],
+            'location': data['problem_location'] ?? "-",
+            'location_name': data['org_name'] ?? "-",
             'problem_callnumber': data['problem_callnumber'],
             'problem_subtypename': data['problem_subtypename'],
             'problem_speed': data['problem_speed'],
@@ -268,6 +269,7 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
     final createdBy = detail?['created_by_username'] ?? "-";
     final company = detail?['company'] ?? "-";
     final callNumber = detail?['problem_callnumber'] ?? "-";
+    final locationName = detail?['location_name'] ?? "-";
     final issue = detail?['problem_subtypename'] ?? "-";
     final speed = detail?['problem_speed'] ?? "-";
     final description = detail?['problem_description'] ?? "-";
@@ -306,6 +308,8 @@ class _ITProblemDetailState extends ProtectedState<ITProblemDetail> {
                       _summaryRow("หน่วยงาน", company, highlight: true),
                       _spacer(size),
                       _summaryRow("เบอร์ติดต่อ", callNumber, highlight: true),
+                      _spacer(size),
+                      _summaryRow("สถานที่", locationName, highlight: true),
                       Divider(color: Colors.grey[300], height: 30),
 
                       _sectionTitle("รายละเอียดปัญหา"),

@@ -171,6 +171,12 @@ class _AdminProblemDetailSelectState
                       detail?['problem_callnumber'] ?? "-",
                       highlight: true,
                     ),
+                    _spacer(size),
+                    _summaryRow(
+                      "สถานที่",
+                      detail?['location_name'] ?? "-",
+                      highlight: true,
+                    ),
                     Divider(color: Colors.grey[300], height: 30),
 
                     _sectionTitle("รายละเอียดปัญหา"),
@@ -600,9 +606,7 @@ class _AdminProblemDetailSelectState
   // -------------------------------- API -------------------------------- //
 
   Future<void> fetchProblemData() async {
-    final url = Uri.parse(
-      'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
-    );
+    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail');
 
     final res = await http.post(
       url,
@@ -616,6 +620,8 @@ class _AdminProblemDetailSelectState
         {
           'created_by_username': data['created_by_username'],
           'company': data['company'],
+          'location': data['problem_location'] ?? "-",
+          'location_name': data['org_name'] ?? "-",
           'problem_callnumber': data['problem_callnumber'],
           'problem_subtypename': data['problem_subtypename'],
           'problem_speed': data['problem_speed'],
@@ -637,9 +643,7 @@ class _AdminProblemDetailSelectState
 
   Future<void> fetchITList() async {
     final userData = await SessionManager.getUserData();
-    final url = Uri.parse(
-      'https://digitapp.rajavithi.go.th/ITService_API/api/get-stafflist',
-    );
+    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-stafflist');
 
     final res = await http.post(
       url,
@@ -657,9 +661,7 @@ class _AdminProblemDetailSelectState
 
   Future<void> assignStaff(String staffId) async {
     try {
-      final assignStaffUrl = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/assignStaff',
-      );
+      final assignStaffUrl = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/assignStaff');
       final sendMessageUrl = Uri.parse(
         'https://digitapp.rajavithi.go.th/ITService_API/api/sendMessageAssign',
       );

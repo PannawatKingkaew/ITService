@@ -26,7 +26,8 @@ import 'utils/session_manager.dart';
 class UserProblemConfirm extends ProtectedPage {
   final String name;
   final String company;
-  final String location;
+  final String orgID;
+  final String orgName;
   final String phone;
   final String category;
   final String problemName;
@@ -39,7 +40,8 @@ class UserProblemConfirm extends ProtectedPage {
     super.key,
     required this.name,
     required this.company,
-    required this.location,
+    required this.orgID,
+    required this.orgName,
     required this.phone,
     required this.category,
     required this.problemName,
@@ -156,7 +158,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
               _summaryRow("เลข AD", adNumberController.text),
               _summaryRow("ชื่อ", widget.name),
               _summaryRow("หน่วยงาน", widget.company),
-              _summaryRow("สถานที่", widget.location),
+              _summaryRow("สถานที่", widget.orgName),
               _summaryRow("เบอร์ติดต่อ", widget.phone, highlight: true),
               Divider(color: Colors.grey[300], height: 30),
 
@@ -307,7 +309,7 @@ class _UserProblemConfirmState extends ProtectedState<UserProblemConfirm> {
       'problemID': finalProblemID,
       'priority': widget.priority,
       'description': widget.description,
-      'location': widget.location,
+      'location': widget.orgID,
     };
 
     try {

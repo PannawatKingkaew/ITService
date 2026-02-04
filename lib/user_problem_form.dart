@@ -29,6 +29,13 @@ class ProblemItem {
   const ProblemItem({required this.id, required this.name});
 }
 
+class ORGItem {
+  final String id;
+  final String name;
+
+  ORGItem({required this.id, required this.name});
+}
+
 class UserProblemForm extends ProtectedPage {
   final String category;
   const UserProblemForm({super.key, required this.category});
@@ -39,6 +46,7 @@ class UserProblemForm extends ProtectedPage {
 
 class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   ProblemItem? selectedProblemItem;
+  ORGItem? selectedORGItem;
   String? selectedPriority;
 
   File? _image;
@@ -54,7 +62,6 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   late final TextEditingController phoneController;
   late final TextEditingController descriptionController;
   late final TextEditingController categoryController;
-  late final TextEditingController locationController;
 
   final List<String> _priorityOptions = ["ปกติ", "ด่วน", "ด่วนมาก"];
 
@@ -69,8 +76,9 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
   );
 
   List<ProblemItem> problemsFromApi = [];
+  List<ORGItem> orgFromApi = [];
   bool isLoadingProblems = false;
-
+  bool isLoadingORG = false;
   @override
   void initState() {
     super.initState();
@@ -80,7 +88,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     companyController = TextEditingController();
     phoneController = TextEditingController();
     descriptionController = TextEditingController();
-    locationController = TextEditingController();
+
     categoryController = TextEditingController(text: widget.category);
 
     _loadUserSession();
@@ -94,7 +102,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     phoneController.dispose();
     descriptionController.dispose();
     categoryController.dispose();
-    locationController.dispose();
+
     super.dispose();
   }
 
@@ -177,7 +185,9 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
               const SizedBox(height: 16),
               _buildTextField("หน่วยงาน", companyController, readOnly: true),
               const SizedBox(height: 16),
-              _buildTextField("สถานที่", locationController),
+
+              _buildORGDropdown(),
+
               const SizedBox(height: 16),
               _buildTextField(
                 "เบอร์ติดต่อ",
@@ -451,6 +461,95 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     );
   }
 
+  Widget _buildORGDropdown() {
+    const EdgeInsets fieldPadding = EdgeInsets.symmetric(
+      horizontal: 10,
+      vertical: 0,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("สถานที่ :", style: TextStyle(fontFamily: "Kanit")),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 36,
+          child: DropdownSearch<ORGItem>(
+            asyncItems: (String filter) => searchORG(filter),
+
+            itemAsString: (ORGItem item) => item.name,
+
+            selectedItem: selectedORGItem,
+            onChanged: (ORGItem? value) {
+              setState(() => selectedORGItem = value);
+            },
+
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+
+              // 🔥 THIS IS THE KEY LINE
+              isFilterOnline: true,
+
+              searchDelay: const Duration(milliseconds: 300),
+
+              searchFieldProps: TextFieldProps(
+                style: const TextStyle(fontSize: 13, height: 1.1),
+                decoration: InputDecoration(
+                  hintText: 'ค้นหา...',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.black12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.black12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.black12),
+                  ),
+                  isDense: true,
+                ),
+              ),
+
+              itemBuilder: (context, item, isSelected) => Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
+                child: Text(item.name, style: const TextStyle(fontSize: 13)),
+              ),
+            ),
+
+            dropdownDecoratorProps: DropDownDecoratorProps(
+                    dropdownSearchDecoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xfff9f9f9),
+                      contentPadding: fieldPadding,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.black12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.black12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.black12),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ---------------- IMAGE ----------------
   Widget _buildImagePicker(Size size) {
     return Column(
@@ -677,9 +776,7 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-          'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemsubtypelist',
-        ),
+        Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemsubtypelist'),
         body: {'category': categoryController.text},
       );
 
@@ -701,6 +798,32 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
     }
 
     setState(() => isLoadingProblems = false);
+  }
+
+  Future<List<ORGItem>> searchORG(String? filter) async {
+    debugPrint('ORG SEARCH CALLED WITH: "$filter"');
+    try {
+      final response = await http.post(
+        Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/getorg'),
+        body: {'search': filter ?? ''},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<ORGItem>.from(
+          data.map(
+            (item) => ORGItem(
+              id: item['ad_org_id'].toString(),
+              name: item['name'].toString(),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("searchORG error: $e");
+    }
+
+    return [];
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -739,7 +862,8 @@ class _UserProblemFormState extends ProtectedState<UserProblemForm> {
           problemID: selectedProblemItem!.id,
           priority: selectedPriority!,
           description: descriptionController.text,
-          location: locationController.text,
+          orgID: selectedORGItem!.id,
+          orgName: selectedORGItem!.name,
           image: _image,
         ),
       ),

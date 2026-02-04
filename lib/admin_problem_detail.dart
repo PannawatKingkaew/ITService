@@ -107,7 +107,9 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AdminProblemList()),
+                  MaterialPageRoute(
+                    builder: (context) => const AdminProblemList(),
+                  ),
                 );
               },
             ),
@@ -161,6 +163,12 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
                     _summaryRow(
                       "เบอร์ติดต่อ",
                       detail?['problem_callnumber'] ?? "-",
+                      highlight: true,
+                    ),
+                    _spacer(size),
+                    _summaryRow(
+                      "สถานที่",
+                      detail?['location_name'] ?? "-",
                       highlight: true,
                     ),
                     Divider(color: Colors.grey[300], height: 30),
@@ -427,9 +435,7 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
   // -------------------------------- API -------------------------------- //
 
   Future<void> fetchProblemData() async {
-    final url = Uri.parse(
-      'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
-    );
+    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail');
 
     final res = await http.post(
       url,
@@ -443,13 +449,17 @@ class _AdminProblemDetailState extends ProtectedState<AdminProblemDetail> {
         {
           'created_by_username': data['created_by_username'],
           'company': data['company'],
+          'location': data['problem_location'] ?? "-",
+          'location_name': data['org_name'] ?? "-",
           'problem_callnumber': data['problem_callnumber'],
           'problem_subtypename': data['problem_subtypename'],
           'problem_speed': data['problem_speed'],
           'problem_description': data['problem_description'],
           'problem_status': data['problem_status'],
           'staff_username': data['staff_username'],
-          'image1': data['attachment_paths']?[0],
+          'image1': data['attachment_paths'].isNotEmpty
+              ? data['attachment_paths'][0]
+              : null,
           'image2': data['attachment_paths']?.length > 1
               ? data['attachment_paths'][1]
               : null,

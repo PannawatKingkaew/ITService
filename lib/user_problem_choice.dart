@@ -22,22 +22,22 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
   // ================= STATIC DATA =================
   static const List<_Category> _categories = [
     _Category(
-      label: 'Helpdesk',
+      label: 'Helpdesk\nอุปกรณ์คอมพิวเตอร์และอุปกรณ์ไอที',
       image: 'assets/img/tool.png',
       gradient: [Color(0xFFFFE6F2), Color(0xFFFFCFE3)],
     ),
     _Category(
-      label: 'Implement',
+      label: 'Implement\nระบบสารสนเทศโรงพยาบาล (HIS)',
       image: 'assets/img/medicine.png',
       gradient: [Color(0xFFD6F5FF), Color(0xFFBDE9FF)],
     ),
     _Category(
-      label: 'Network',
+      label: 'Network\nเครือข่ายอินเทอร์เน็ต',
       image: 'assets/img/network.png',
       gradient: [Color(0xFFE6FFD6), Color(0xFFD1FFC0)],
     ),
     _Category(
-      label: 'Programmer',
+      label: 'Programmer\nระบบที่เข้าใช้งานผ่านเว็บเบราว์เซอร์',
       image: 'assets/img/code.png',
       gradient: [Color(0xFFF0E6FF), Color(0xFFDCCBFF)],
     ),
@@ -116,7 +116,6 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
 
   // ================= CONTENT =================
   Widget _buildContent(BuildContext context, Size size) {
- 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       child: Container(
@@ -218,14 +217,31 @@ class _UserProblemChoiceState extends ProtectedState<UserProblemChoice> {
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: "Kanit",
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: label.split('\n').first,
+                    style: const TextStyle(
+                      fontFamily: "Kanit",
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                  if (label.contains('\n'))
+                    TextSpan(
+                      text: '\n${label.split('\n').last}',
+                      style: const TextStyle(
+                        fontFamily: "Kanit",
+                        fontSize: 9, // ✅ เล็กลง
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF555555),
+                      ),
+                    ),
+                ],
               ),
+              textAlign: TextAlign.center, // ✅ อยู่ตรงกลาง
             ),
           ],
         ),

@@ -141,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
           _buildTextFieldLabel("ชื่อผู้ใช้"),
           _buildTextField(
             controller: _usernameController,
-            hintText: "กรอกชื่อผู้ใช้ของคุณ",
+            hintText: "กรอก User AD ของคุณ",
             icon: Icons.person,
           ),
           const SizedBox(height: 20),
@@ -173,6 +173,7 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     return TextField(
       controller: controller,
+      keyboardType: TextInputType.number,
       style: const TextStyle(fontFamily: "Kanit"),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: const Color(0xFFC23B85)),

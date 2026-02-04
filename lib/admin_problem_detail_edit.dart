@@ -139,6 +139,7 @@ class _AdminProblemDetailEditState
     // Null-safe dynamic values
     final createdBy = detail?['created_by_username'] ?? "-";
     final company = detail?['company'] ?? "-";
+    final orgName = detail?['location_name'] ?? "-";
     final callNumber = detail?['problem_callnumber'] ?? "-";
 
     final description = detail?['problem_description'] ?? "-";
@@ -177,6 +178,8 @@ class _AdminProblemDetailEditState
                       _summaryRow("หน่วยงาน", company, highlight: true),
                       _spacer(context),
                       _summaryRow("เบอร์ติดต่อ", callNumber, highlight: true),
+                      _spacer(context),
+                      _summaryRow("สถานที่", orgName, highlight: true),
                       Divider(color: Colors.grey[300], height: 30),
 
                       _sectionTitle("รายละเอียดปัญหา"),
@@ -725,9 +728,7 @@ class _AdminProblemDetailEditState
 
   Future<void> fetchProblemData() async {
     try {
-      final url = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail',
-      );
+      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemdetail');
 
       final response = await http.post(
         url,
@@ -748,7 +749,8 @@ class _AdminProblemDetailEditState
             'id': data['problem_id'],
             'created_by_username': data['created_by_username'],
             'company': data['company'],
-            'problem_location': data['problem_location'],
+            'location': data['problem_location'] ?? "-",
+            'location_name': data['org_name'] ?? "-",
             'problem_callnumber': data['problem_callnumber'],
             'problem_subtypename': data['problem_subtypename'],
             'problem_typename': data['problem_typename'],
@@ -779,9 +781,7 @@ class _AdminProblemDetailEditState
     if (!mounted) return;
     setState(() => isLoading = false);
 
-    final url = Uri.parse(
-      'https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemTypeList',
-    );
+    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemtypelist');
 
     try {
       final response = await http.post(url);
@@ -808,9 +808,7 @@ class _AdminProblemDetailEditState
     if (!mounted) return;
     setState(() => isLoading = false);
 
-    final url = Uri.parse(
-      'https://digitapp.rajavithi.go.th/ITService_API/api/get-getProblemSubTypeList',
-    );
+    final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/get-problemsubtypelist');
 
     try {
       final response = await http.post(
@@ -853,9 +851,7 @@ class _AdminProblemDetailEditState
       final userData = await SessionManager.getUserData();
       final adUser = userData['userid'];
 
-      final url = Uri.parse(
-        'https://digitapp.rajavithi.go.th/ITService_API/api/saveProblemChanges',
-      );
+      final url = Uri.parse('https://digitapp.rajavithi.go.th/ITService_API/api/saveProblemChanges');
       final sendMessageUrl = Uri.parse(
         'https://digitapp.rajavithi.go.th/ITService_API/api/sendMessageChangeType',
       );

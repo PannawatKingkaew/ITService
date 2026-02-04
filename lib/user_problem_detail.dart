@@ -148,12 +148,15 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
                       _summaryRow("ชื่อ", detail['created_by_username'], true),
                       SizedBox(height: spacer),
                       _summaryRow("หน่วยงาน", detail['company'], true),
+                      
                       SizedBox(height: spacer),
                       _summaryRow(
                         "เบอร์ติดต่อ",
                         detail['problem_callnumber'],
                         true,
                       ),
+                      SizedBox(height: spacer),
+                      _summaryRow("สถานที่", detail['location_name'], true),
                       Divider(color: Colors.grey[300], height: 30),
 
                       _sectionTitle("รายละเอียดปัญหา"),
@@ -422,6 +425,8 @@ class _UserProblemDetailState extends ProtectedState<UserProblemDetail> {
             'id': data['problem_id'],
             'created_by_username': data['created_by_username'] ?? "-",
             'company': data['company'] ?? "-",
+            'location': data['problem_location'] ?? "-",
+            'location_name': data['org_name'] ?? "-",
             'problem_callnumber': data['problem_callnumber'] ?? "-",
             'problem_subtypename': data['problem_subtypename'] ?? "-",
             'problem_speed': data['problem_speed'] ?? "-",
